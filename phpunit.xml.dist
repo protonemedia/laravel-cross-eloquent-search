@@ -26,4 +26,8 @@
         <log type="coverage-text" target="build/coverage.txt"/>
         <log type="coverage-clover" target="build/logs/clover.xml"/>
     </logging>
+    <php>
+        <server name="DB_USERNAME" value="travis"/>
+        <server name="DB_PASSWORD" value=""/>
+    </php>
 </phpunit>

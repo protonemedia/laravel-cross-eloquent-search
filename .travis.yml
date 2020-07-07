@@ -1,5 +1,8 @@
 language: php
 
+services:
+  - mysql
+
 cache:
   directories:
     - $HOME/.composer/cache
@@ -17,6 +20,7 @@ matrix:
   fast_finish: true
 
 before_install:
+  - mysql -e 'CREATE DATABASE search_test;'
   - composer config discard-changes true
   - travis_retry composer self-update
   - travis_retry composer require "laravel/framework:${LARAVEL}" "orchestra/testbench:${TESTBENCH}" --no-interaction --no-update
