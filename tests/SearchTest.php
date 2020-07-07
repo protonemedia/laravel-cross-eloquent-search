@@ -160,4 +160,23 @@ class SearchTest extends TestCase
         $this->assertTrue($resultsPage2->first()->is($postA));
         $this->assertTrue($resultsPage2->last()->is($videoA));
     }
+
+    /** @test */
+    public function it_can_eager_load_relations()
+    {
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'bar']);
+
+        foreach (range(1, 10) as $i) {
+            $postA->comments()->create(['body' => 'ok']);
+            $postB->comments()->create(['body' => 'ok']);
+        }
+
+        $results = Search::new()
+            ->add(Post::with('comments'), 'title')
+            ->get('foo');
+
+        $this->assertCount(1, $results);
+        $this->assertTrue($results->first()->relationLoaded('comments'));
+    }
 }

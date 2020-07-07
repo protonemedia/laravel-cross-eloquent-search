@@ -34,7 +34,7 @@ class PendingQuery
 
     public function newQueryWithoutScopes(): Builder
     {
-        return $this->getModel()->newQueryWithoutScopes();
+        return $this->getFreshBuilder();
     }
 
     public function getQualifiedColumns(): Collection

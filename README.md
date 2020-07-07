@@ -76,6 +76,25 @@ $results = Search::new()
     ->get('foo');
 ```
 
+### Add wildcard on left side of the term
+
+```php
+$results = Search::new()
+    ->add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->wildcardLeft()
+    ->get('foo');
+```
+
+### Eager load relations
+
+```php
+$results = Search::new()
+    ->add(Post::with('comments'), 'title')
+    ->add(Video::with('likes'), 'title')
+    ->get('foo');
+```
+
 ### Testing
 
 ``` bash
