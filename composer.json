@@ -1,0 +1,43 @@
+{
+    "name": "protonemedia/laravel-cross-eloquent-search",
+    "description": "Package to handle email address updates and verification",
+    "keywords": [
+        "protonemedia",
+        "laravel-cross-eloquent-search"
+    ],
+    "homepage": "https://github.com/protonemedia/laravel-cross-eloquent-search",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Pascal Baljet",
+            "email": "pascal@protone.media",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.4",
+        "illuminate/support": "^6.0 | ^7.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "4.0.*",
+        "phpunit/phpunit": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ProtoneMedia\\LaravelCrossEloquentSearch\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ProtoneMedia\\LaravelCrossEloquentSearch\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
