@@ -5,9 +5,15 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
 use Illuminate\Database\Eloquent\Model;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 use PDO;
+use ProtoneMedia\LaravelCrossEloquentSearch\ServiceProvider;
 
 class TestCase extends OrchestraTestCase
 {
+    protected function getPackageProviders($app)
+    {
+        return [ServiceProvider::class];
+    }
+
     public function setUp(): void
     {
         parent::setUp();

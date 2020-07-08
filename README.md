@@ -28,8 +28,7 @@ No configuration!
 ### Basic
 
 ```php
-$results = Search::new()
-    ->add(Post::class, 'title')
+$results = Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->get('foo');
 ```
@@ -37,8 +36,7 @@ $results = Search::new()
 ### Pagination
 
 ```php
-$results = Search::new()
-    ->add(Post::class, 'title')
+$results = Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
 
     ->paginate()
@@ -51,8 +49,7 @@ $results = Search::new()
 ### Scoped queries
 
 ```php
-$results = Search::new()
-    ->add(Post::published(), 'title')
+$results = Search::add(Post::published(), 'title')
     ->add(Video::where('views', '>', 2500), 'title')
     ->get('foo');
 ```
@@ -60,8 +57,7 @@ $results = Search::new()
 ### Multiple columns
 
 ```php
-$results = Search::new()
-    ->add(Post::class, ['title', 'body'])
+$results = Search::add(Post::class, ['title', 'body'])
     ->add(Video::class, ['title', 'subtitle'])
     ->get('foo');
 ```
@@ -69,8 +65,7 @@ $results = Search::new()
 ### Order results
 
 ```php
-$results = Search::new()
-    ->add(Post::class, 'title', 'publihed_at')
+$results = Search::add(Post::class, 'title', 'publihed_at')
     ->add(Video::class, 'title', 'released_at')
     ->orderByDesc() // optional
     ->get('foo');
@@ -79,8 +74,7 @@ $results = Search::new()
 ### Add wildcard on left side of the term
 
 ```php
-$results = Search::new()
-    ->add(Post::class, 'title')
+$results = Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->wildcardLeft()
     ->get('foo');
@@ -89,8 +83,7 @@ $results = Search::new()
 ### Eager load relations
 
 ```php
-$results = Search::new()
-    ->add(Post::with('comments'), 'title')
+$results = Search::add(Post::with('comments'), 'title')
     ->add(Video::with('likes'), 'title')
     ->get('foo');
 ```

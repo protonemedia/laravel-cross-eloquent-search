@@ -32,11 +32,6 @@ class PendingQuery
         return clone $this->builder;
     }
 
-    public function newQueryWithoutScopes(): Builder
-    {
-        return $this->getFreshBuilder();
-    }
-
     public function getQualifiedColumns(): Collection
     {
         return $this->columns->map(fn ($column) => $this->qualifyColumn($column));
@@ -63,31 +58,12 @@ class PendingQuery
 
     public function qualifyColumn(string $column): string
     {
-        if (Str::contains($column, '.')) {
-            return $column;
-        }
-
-        return $this->getQualifiedTable() . '.' . $column;
+        return $this->getModel()->qualifyColumn($column);
     }
 
     public function getQualifiedKeyName(): string
     {
         return $this->qualifyColumn($this->getModel()->getKeyName());
-    }
-
-    public function getTable(): string
-    {
-        return $this->getModel()->getTable();
-    }
-
-    public function getQualifiedTable(): string
-    {
-        return $this->key . '_' . $this->getModel()->getTable();
-    }
-
-    public function getTableAlias(): string
-    {
-        return $this->getTable() . ' as ' . $this->getQualifiedTable();
     }
 
     public function getQualifiedOrderByColumnName(): string

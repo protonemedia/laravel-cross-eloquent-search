@@ -22,8 +22,7 @@ class SearchTest extends TestCase
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar']);
 
-        $results = Search::new()
-            ->add(Post::class, 'title')
+        $results = Search::add(Post::class, 'title')
             ->add(Video::class, 'title')
             ->get('foo');
 
@@ -46,8 +45,7 @@ class SearchTest extends TestCase
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
-        $results = Search::new()
-            ->add(Post::class, 'title')
+        $results = Search::add(Post::class, 'title')
             ->add(Video::class, ['title', 'subtitle'])
             ->get('foo');
 
@@ -60,7 +58,7 @@ class SearchTest extends TestCase
     public function it_throws_an_exception_when_the_query_is_empty()
     {
         try {
-            Search::new()->get('');
+            Search::get('');
         } catch (EmptySearchQueryException $exception) {
             return $this->assertTrue(true);
         }
@@ -73,8 +71,8 @@ class SearchTest extends TestCase
     {
         Video::create(['title' => 'foo']);
 
-        $this->assertCount(0, Search::new()->add(Video::class, 'title')->get('oo'));
-        $this->assertCount(1, Search::new()->add(Video::class, 'title')->wildcardLeft()->get('oo'));
+        $this->assertCount(0, Search::add(Video::class, 'title')->get('oo'));
+        $this->assertCount(1, Search::add(Video::class, 'title')->wildcardLeft()->get('oo'));
     }
 
     /** @test */
@@ -83,8 +81,7 @@ class SearchTest extends TestCase
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
-        $results = Search::new()
-            ->add(Video::class, 'title')
+        $results = Search::add(Video::class, 'title')
             ->add(Video::class, 'subtitle')
             ->get('foo');
 
@@ -102,8 +99,7 @@ class SearchTest extends TestCase
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDay()]);
         $videoB = Video::create(['title' => 'bar']);
 
-        $results = Search::new()
-            ->add(Post::class, 'title', 'published_at')
+        $results = Search::add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc()
             ->get('foo');
@@ -122,8 +118,7 @@ class SearchTest extends TestCase
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDay()]);
         $videoB = Video::create(['title' => 'foo']);
 
-        $results = Search::new()
-            ->add(Post::whereNotNull('published_at'), 'title')
+        $results = Search::add(Post::whereNotNull('published_at'), 'title')
             ->add(Video::whereNotNull('published_at'), 'title')
             ->get('foo');
 
@@ -140,8 +135,7 @@ class SearchTest extends TestCase
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
         $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
 
-        $search = Search::new()
-            ->add(Post::class, 'title', 'published_at')
+        $search = Search::add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
@@ -172,8 +166,7 @@ class SearchTest extends TestCase
             $postB->comments()->create(['body' => 'ok']);
         }
 
-        $results = Search::new()
-            ->add(Post::with('comments'), 'title')
+        $results = Search::add(Post::with('comments'), 'title')
             ->get('foo');
 
         $this->assertCount(1, $results);
