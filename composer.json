@@ -1,6 +1,6 @@
 {
     "name": "protonemedia/laravel-cross-eloquent-search",
-    "description": "Package to handle email address updates and verification",
+    "description": "Laravel package to search through multiple Eloquent models. Supports pagination, eager loading relations, single/multiple columns, sorting and scoped queries.",
     "keywords": [
         "protonemedia",
         "laravel-cross-eloquent-search"
