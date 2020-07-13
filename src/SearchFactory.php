@@ -9,7 +9,7 @@ class SearchFactory
     use ForwardsCalls;
 
     /**
-    * Handle dynamic method calls into the a new Searcher.
+    * Handle dynamic method calls into a new Searcher instance.
     *
     * @param  string  $method
     * @param  array  $parameters

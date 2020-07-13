@@ -11,15 +11,41 @@ use Illuminate\Support\Str;
 
 class Searcher
 {
-    private Collection $pendingQueries;
+    /**
+     * Collection of models to search through.
+     */
+    private Collection $modelsToSearchThrough;
 
+    /**
+     * Order direction.
+     */
     private string $orderByDirection;
+
+    /**
+     * Start the search term with a wildcard.
+     */
     private bool $wildcardLeft = false;
+
+    /**
+     * Collection of search terms.
+     */
     private Collection $terms;
 
-    /** Pagination */
-    private int $perPage     = 15;
+    /**
+     * The number of items to be shown per page.
+     */
+    private int $perPage = 15;
+
+    /**
+     * The query string variable used to store the page.
+     */
     private string $pageName = 'page';
+
+    /**
+     * Current page.
+     *
+     * @var int|null
+     */
     private $page;
 
     /**
@@ -27,11 +53,16 @@ class Searcher
      */
     public function __construct()
     {
-        $this->pendingQueries = new Collection;
+        $this->modelsToSearchThrough = new Collection;
 
         $this->orderByAsc();
     }
 
+    /**
+     * Sets the ordering to ascending.
+     *
+     * @return self
+     */
     public function orderByAsc(): self
     {
         $this->orderByDirection = 'asc';
@@ -39,6 +70,11 @@ class Searcher
         return $this;
     }
 
+    /**
+     * Sets the ordering to descending.
+     *
+     * @return self
+     */
     public function orderByDesc(): self
     {
         $this->orderByDirection = 'desc';
@@ -46,20 +82,33 @@ class Searcher
         return $this;
     }
 
+    /**
+     * Add a model to search through.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder|string $query
+     * @param string|array|\Illuminate\Support\Collection $columns
+     * @param string $orderByColumn
+     * @return self
+     */
     public function add($query, $columns, string $orderByColumn = 'updated_at'): self
     {
-        $pendingQuery = new PendingQuery(
+        $modelToSearchThrough = new ModelToSearchThrough(
             is_string($query) ? $query::query() : $query,
             Collection::wrap($columns),
             $orderByColumn,
-            $this->pendingQueries->count()
+            $this->modelsToSearchThrough->count()
         );
 
-        $this->pendingQueries->push($pendingQuery);
+        $this->modelsToSearchThrough->push($modelToSearchThrough);
 
         return $this;
     }
 
+    /**
+     * Let's each search term start with a wildcard.
+     *
+     * @return self
+     */
     public function wildcardLeft(): self
     {
         $this->wildcardLeft = true;
@@ -67,30 +116,14 @@ class Searcher
         return $this;
     }
 
-    private function makeOrderBy(): string
-    {
-        $modelOrderKeys = $this->pendingQueries->map->getModelKey('order')->implode(',');
-
-        return "COALESCE({$modelOrderKeys})";
-    }
-
-    private function makeSelects(PendingQuery $currentPendingQuery): array
-    {
-        return $this->pendingQueries->flatMap(function (PendingQuery $pendingQuery) use ($currentPendingQuery) {
-            $qualifiedKeyName = $qualifiedOrderByColumnName = 'null';
-
-            if ($pendingQuery === $currentPendingQuery) {
-                $qualifiedKeyName = $pendingQuery->getQualifiedKeyName();
-                $qualifiedOrderByColumnName = $pendingQuery->getQualifiedOrderByColumnName();
-            }
-
-            return [
-                DB::raw("{$qualifiedKeyName} as {$pendingQuery->getModelKey()}"),
-                DB::raw("{$qualifiedOrderByColumnName} as {$pendingQuery->getModelKey('order')}"),
-            ];
-        })->all();
-    }
-
+    /**
+     * Sets the pagination properties.
+     *
+     * @param integer $perPage
+     * @param string $pageName
+     * @param int|null $page
+     * @return self
+     */
     public function paginate($perPage = 15, $pageName = 'page', $page = null): self
     {
         $this->page     = $page ?: Paginator::resolveCurrentPage($pageName);
@@ -100,27 +133,14 @@ class Searcher
         return $this;
     }
 
-    public function addSearchQueryToBuilder(Builder $builder, PendingQuery $pendingQuery, string $term)
-    {
-        return $builder->where(function ($query) use ($pendingQuery) {
-            $pendingQuery->getQualifiedColumns()->each(
-                fn ($field) => $this->terms->each(fn ($term) => $query->orWhere($field, 'like', $term))
-            );
-        });
-    }
-
-    private function buildQueries($term): Collection
-    {
-        return $this->pendingQueries->map(function (PendingQuery $pendingQuery) use ($term) {
-            return $pendingQuery->getFreshBuilder()
-                ->select($this->makeSelects($pendingQuery))
-                ->tap(function ($builder) use ($pendingQuery, $term) {
-                    $this->addSearchQueryToBuilder($builder, $pendingQuery, $term);
-                });
-        });
-    }
-
-    private function initializeTerm($term): self
+    /**
+     * Creates a collection out of the given search term.
+     *
+     * @param string $term
+     * @throws \ProtoneMedia\LaravelCrossEloquentSearch\EmptySearchQueryException
+     * @return self
+     */
+    private function initializeTerm(string $term): self
     {
         $this->terms = Collection::make(str_getcsv($term, ' ', '"'))
             ->filter()
@@ -133,10 +153,86 @@ class Searcher
         return $this;
     }
 
-    public function get(string $term)
+    /**
+     * Adds a where clause to the builder, which encapsulates
+     * a series 'orWhere' clauses for each column and for
+     * each search term.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $modelToSearchThrough
+     * @return void
+     */
+    public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
     {
-        // set the term and build all queries to perform the searches
-        $queries = $this->initializeTerm($term)->buildQueries($term);
+        $builder->where(function ($query) use ($modelToSearchThrough) {
+            $modelToSearchThrough->getQualifiedColumns()->each(
+                fn ($field) => $this->terms->each(fn ($term) => $query->orWhere($field, 'like', $term))
+            );
+        });
+    }
+
+    /**
+     * Builds an array with all qualified columns for
+     * both the ids and ordering.
+     *
+     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $currentModel
+     * @return array
+     */
+    private function makeSelects(ModelToSearchThrough $currentModel): array
+    {
+        return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
+            $qualifiedKeyName = $qualifiedOrderByColumnName = 'null';
+
+            if ($modelToSearchThrough === $currentModel) {
+                $qualifiedKeyName = $modelToSearchThrough->getQualifiedKeyName();
+                $qualifiedOrderByColumnName = $modelToSearchThrough->getQualifiedOrderByColumnName();
+            }
+
+            return [
+                DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
+                DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
+            ];
+        })->all();
+    }
+
+    /**
+     * Implodes the qualified order keys with a comma and
+     * wraps them in a COALESCE method.
+     *
+     * @return string
+     */
+    private function makeOrderBy(): string
+    {
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
+
+        return "COALESCE({$modelOrderKeys})";
+    }
+
+    /**
+     * Builds the search queries for each given pending model.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    private function buildQueries(): Collection
+    {
+        return $this->modelsToSearchThrough->map(function (ModelToSearchThrough $modelToSearchThrough) {
+            return $modelToSearchThrough->getFreshBuilder()
+                ->select($this->makeSelects($modelToSearchThrough))
+                ->tap(function ($builder) use ($modelToSearchThrough) {
+                    $this->addSearchQueryToBuilder($builder, $modelToSearchThrough);
+                });
+        });
+    }
+
+    /**
+     * Compiles all queries to one big one which binds everything together
+     * using UNION statements.
+     *
+     * @return \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    private function getIdAndOrderAttributes()
+    {
+        $queries = $this->buildQueries();
 
         // take the first query
         $firstQuery = $queries->shift()->toBase();
@@ -148,11 +244,11 @@ class Searcher
         $firstQuery->orderBy(DB::raw($this->makeOrderBy()), $this->orderByDirection);
 
         // get all results or limit the results by pagination
-        $results = $this->perPage
+        return $this->perPage
             ? $firstQuery->paginate($this->perPage, ['*'], $this->pageName, $this->page)
             : $firstQuery->get();
 
-        // $results will be something like:
+        // the collection will be something like:
         //
         // [
         //     [
@@ -168,19 +264,27 @@ class Searcher
         //         "1_video_order": null
         //     ]
         // ]
+    }
 
-        // map over each query, pluck the relevant keys, and get the models using a fresh builder
-        $modelsPerType = $this->pendingQueries
+    /**
+     * Get the models per type.
+     *
+     * @param \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator $results
+     * @return \Illuminate\Support\Collection
+     */
+    private function getModelsPerType($results)
+    {
+        return $this->modelsToSearchThrough
             ->keyBy->getModelKey()
-            ->map(function (PendingQuery $pendingQuery, $key) use ($results) {
+            ->map(function (ModelToSearchThrough $modelToSearchThrough, $key) use ($results) {
                 $ids = $results->pluck($key)->filter();
 
                 return $ids->isNotEmpty()
-                    ? $pendingQuery->getFreshBuilder()->whereKey($ids)->get()->keyBy->getKey()
+                    ? $modelToSearchThrough->getFreshBuilder()->whereKey($ids)->get()->keyBy->getKey()
                     : null;
             });
 
-        // $modelsPerType will be something like:
+        // the collection will be something like:
         //
         // [
         //     "0_post_key" => [
@@ -190,6 +294,23 @@ class Searcher
         //         3 => VideoModel
         //     ],
         // ]
+    }
+
+    /**
+     * Initialize the search terms, execute the search query and retrieve all
+     * models per type. Map the results to a Eloquent collection and set
+     * the collection on the paginator (whenever used).
+     *
+     * @param string $term
+     * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function get(string $term)
+    {
+        $this->initializeTerm($term);
+
+        $results = $this->getIdAndOrderAttributes();
+
+        $modelsPerType = $this->getModelsPerType($results);
 
         // loop over the results again and replace the object with the related model
         return $results->map(function ($item) use ($modelsPerType) {

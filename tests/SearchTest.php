@@ -55,6 +55,23 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_search_for_a_phrase()
+    {
+        $postA  = Post::create(['title' => 'foo']);
+        $postB  = Post::create(['title' => 'bar bar']);
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar']);
+
+        $results = Search::add(Post::class, 'title')
+            ->add(Video::class, 'title')
+            ->get('"bar bar"');
+
+        $this->assertCount(1, $results);
+
+        $this->assertTrue($results->contains($postB));
+    }
+
+    /** @test */
     public function it_throws_an_exception_when_the_query_is_empty()
     {
         try {
