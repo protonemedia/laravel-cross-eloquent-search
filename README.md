@@ -33,7 +33,7 @@ composer require protonemedia/laravel-cross-eloquent-search
 
 ## Usage
 
-Start your search query by adding one or more models to search through. Call the `add` method with the class name of the model and the column you want to search through. Then call the `get` method with the search term and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results. By default, the results are sorted in ascending order by the `updated_at` column.
+Start your search query by adding one or more models to search through. Call the `add` method with the class name of the model and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results. By default, the results are sorted in ascending order by the `updated_at` column.
 
 ```php
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
@@ -56,7 +56,7 @@ Search::add(Post::class, 'title', 'publihed_at')
 
 ### Start search term with wildcard
 
-By default, the search term will be split up and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to start with as well, you can call the `startWithWildcard` method. This will result in `%apple%` and `%ios`.
+By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to start with as well, you can call the `startWithWildcard` method. This will result in `%apple%` and `%ios`.
 
 ```php
 Search::add(Post::class, 'title')
@@ -67,7 +67,7 @@ Search::add(Post::class, 'title')
 
 ### Multi-word search
 
-Multi-word search is supported out of the box. Simply wrap your phrase into double quotes.
+Multi-word search is supported out of the box. Simply wrap your phrase into double-quotes.
 
 ```php
 Search::add(Post::class, 'title')
@@ -77,7 +77,7 @@ Search::add(Post::class, 'title')
 
 ### Pagination
 
-It is highly recommended to paginate your results. Call the `paginate` method before the `get` method and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
+We highly recommend to paginate your results. Call the `paginate` method before the `get` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
 
 ```php
 Search::add(Post::class, 'title')
@@ -102,7 +102,7 @@ Search::add(Post::published(), 'title')
 
 ### Multiple columns per model
 
-You can search through multiple columns by passing an array of columns as second argument.
+You can search through multiple columns by passing an array of columns as the second argument.
 
 ```php
 Search::add(Post::class, ['title', 'body'])
@@ -129,7 +129,7 @@ composer test
 
 ### Changelog
 
-Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
+Please see [CHANGELOG](CHANGELOG.md) for more information about what has changed recently.
 
 ## Contributing
 
