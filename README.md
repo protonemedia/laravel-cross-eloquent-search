@@ -5,11 +5,22 @@
 [![Quality Score](https://img.shields.io/scrutinizer/g/pascalbaljetmedia/laravel-cross-eloquent-search.svg?style=flat-square)](https://scrutinizer-ci.com/g/pascalbaljetmedia/laravel-cross-eloquent-search)
 [![Total Downloads](https://img.shields.io/packagist/dt/protonemedia/laravel-cross-eloquent-search.svg?style=flat-square)](https://packagist.org/packages/protonemedia/laravel-cross-eloquent-search)
 
+This Laravel package allows you to search through multiple Eloquent models. It supports sorting, pagination, scoped queries, eager load relationships and searching through single or multiple columns.
+
 ## Requirements
 
 * PHP 7.4+
 * MySQL 5.7+
 * Laravel 6.0 / 7.0
+
+## Features
+
+* Search through one or more [Eloquent models](https://laravel.com/docs/master/eloquent).
+* Support for cross-model [pagination](https://laravel.com/docs/master/pagination#introduction).
+* Search through single or multiple columns.
+* Use [constraints](https://laravel.com/docs/master/eloquent#retrieving-models) and [scoped queries](https://laravel.com/docs/master/eloquent#query-scopes).
+* [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
+* In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
 
 ## Installation
 
@@ -19,71 +30,90 @@ You can install the package via composer:
 composer require protonemedia/laravel-cross-eloquent-search
 ```
 
-## Configuration
-
-No configuration!
-
 ## Usage
 
-### Basic
+Start your search query by adding one or more models to search through. Call the `add` method with the class name of the model and the column you want to search through. Then call the `get` method with the search term and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results. By default, the results are sorted in ascending order by the `updated_at` column.
 
 ```php
+use ProtoneMedia\LaravelCrossEloquentSearch\Search;
+
 $results = Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->get('foo');
+    ->get('howto');
+```
+
+### Sorting
+
+If you want to sort the results by another column, you can pass that column to the `add` method as a third parameter. Call the `orderByDesc` method to sort the results in descending order.
+
+```php
+Search::add(Post::class, 'title', 'publihed_at')
+    ->add(Video::class, 'title', 'released_at')
+    ->orderByDesc()
+    ->get('learn');
+```
+
+### Start search term with wildcard
+
+By default, the search term will be split up and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to start with as well, you can call the `startWithWildcard` method. This will result in `%apple%` and `%ios`.
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->startWithWildcard()
+    ->get('os');
+```
+
+### Multi-word search
+
+Multi-word search is supported out of the box. Simply wrap your phrase into double quotes.
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->get('"macos big sur"');
 ```
 
 ### Pagination
 
+It is highly recommended to paginate your results. Call the `paginate` method before the `get` method and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
+
 ```php
-$results = Search::add(Post::class, 'title')
+Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
 
     ->paginate()
     // or
     ->paginate($perPage = 15, $pageName = 'page', $page = 1)
 
-    ->get('foo');
+    ->get('build');
 ```
 
-### Scoped queries
+### Constraints and scoped queries
+
+Instead of the class name, you can also pass an instance of the [Eloquent query builder](https://laravel.com/docs/master/eloquent#retrieving-models) to the `add` method. This allows you to add constraints to each model.
 
 ```php
-$results = Search::add(Post::published(), 'title')
+Search::add(Post::published(), 'title')
     ->add(Video::where('views', '>', 2500), 'title')
-    ->get('foo');
+    ->get('compile');
 ```
 
-### Multiple columns
+### Multiple columns per model
+
+You can search through multiple columns by passing an array of columns as second argument.
 
 ```php
-$results = Search::add(Post::class, ['title', 'body'])
+Search::add(Post::class, ['title', 'body'])
     ->add(Video::class, ['title', 'subtitle'])
-    ->get('foo');
+    ->get('eloquent');
 ```
 
-### Order results
+
+### Eager l relationships
 
 ```php
-$results = Search::add(Post::class, 'title', 'publihed_at')
-    ->add(Video::class, 'title', 'released_at')
-    ->orderByDesc() // optional
-    ->get('foo');
-```
-
-### Add wildcard on left side of the term
-
-```php
-$results = Search::add(Post::class, 'title')
-    ->add(Video::class, 'title')
-    ->wildcardLeft()
-    ->get('foo');
-```
-
-### Eager load relations
-
-```php
-$results = Search::add(Post::with('comments'), 'title')
+Search::add(Post::with('comments'), 'title')
     ->add(Video::with('likes'), 'title')
     ->get('foo');
 ```

@@ -89,7 +89,7 @@ class SearchTest extends TestCase
         Video::create(['title' => 'foo']);
 
         $this->assertCount(0, Search::add(Video::class, 'title')->get('oo'));
-        $this->assertCount(1, Search::add(Video::class, 'title')->wildcardLeft()->get('oo'));
+        $this->assertCount(1, Search::add(Video::class, 'title')->startWithWildcard()->get('oo'));
     }
 
     /** @test */

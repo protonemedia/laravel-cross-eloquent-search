@@ -17,14 +17,14 @@ class Searcher
     private Collection $modelsToSearchThrough;
 
     /**
-     * Order direction.
+     * Sort direction.
      */
     private string $orderByDirection;
 
     /**
      * Start the search term with a wildcard.
      */
-    private bool $wildcardLeft = false;
+    private bool $startWithWildcard = false;
 
     /**
      * Collection of search terms.
@@ -59,7 +59,7 @@ class Searcher
     }
 
     /**
-     * Sets the ordering to ascending.
+     * Sort the results in ascending order.
      *
      * @return self
      */
@@ -71,7 +71,7 @@ class Searcher
     }
 
     /**
-     * Sets the ordering to descending.
+     * Sort the results in descending order.
      *
      * @return self
      */
@@ -109,9 +109,9 @@ class Searcher
      *
      * @return self
      */
-    public function wildcardLeft(): self
+    public function startWithWildcard(): self
     {
-        $this->wildcardLeft = true;
+        $this->startWithWildcard = true;
 
         return $this;
     }
@@ -136,15 +136,15 @@ class Searcher
     /**
      * Creates a collection out of the given search term.
      *
-     * @param string $term
+     * @param string $terms
      * @throws \ProtoneMedia\LaravelCrossEloquentSearch\EmptySearchQueryException
      * @return self
      */
-    private function initializeTerm(string $term): self
+    private function initializeTerms(string $terms): self
     {
-        $this->terms = Collection::make(str_getcsv($term, ' ', '"'))
+        $this->terms = Collection::make(str_getcsv($terms, ' ', '"'))
             ->filter()
-            ->map(fn ($term) => ($this->wildcardLeft ? '%' : '') . "{$term}%");
+            ->map(fn ($term) => ($this->startWithWildcard ? '%' : '') . "{$term}%");
 
         if ($this->terms->isEmpty()) {
             throw new EmptySearchQueryException;
@@ -301,12 +301,12 @@ class Searcher
      * models per type. Map the results to a Eloquent collection and set
      * the collection on the paginator (whenever used).
      *
-     * @param string $term
+     * @param string $terms
      * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function get(string $term)
+    public function get(string $terms = null)
     {
-        $this->initializeTerm($term);
+        $this->initializeTerms($terms ?: '');
 
         $results = $this->getIdAndOrderAttributes();
 
