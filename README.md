@@ -4,6 +4,7 @@
 [![Build Status](https://img.shields.io/travis/pascalbaljetmedia/laravel-cross-eloquent-search/master.svg?style=flat-square)](https://travis-ci.org/pascalbaljetmedia/laravel-cross-eloquent-search)
 [![Quality Score](https://img.shields.io/scrutinizer/g/pascalbaljetmedia/laravel-cross-eloquent-search.svg?style=flat-square)](https://scrutinizer-ci.com/g/pascalbaljetmedia/laravel-cross-eloquent-search)
 [![Total Downloads](https://img.shields.io/packagist/dt/protonemedia/laravel-cross-eloquent-search.svg?style=flat-square)](https://packagist.org/packages/protonemedia/laravel-cross-eloquent-search)
+[![Buy us a tree](https://img.shields.io/badge/Treeware-%F0%9F%8C%B3-lightgreen)](https://plant.treeware.earth/pascalbaljetmedia/laravel-cross-eloquent-search)
 
 This Laravel package allows you to search through multiple Eloquent models. It supports sorting, pagination, scoped queries, eager load relationships and searching through single or multiple columns.
 
@@ -110,12 +111,14 @@ Search::add(Post::class, ['title', 'body'])
 ```
 
 
-### Eager l relationships
+### Eager load relationships
+
+Not much to explain here, but this is supported as well :)
 
 ```php
 Search::add(Post::with('comments'), 'title')
     ->add(Video::with('likes'), 'title')
-    ->get('foo');
+    ->get('guitar');
 ```
 
 ### Testing
@@ -132,6 +135,14 @@ Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recen
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
+## Other Laravel packages
+
+* [`Laravel Analytics Event Tracking`](https://github.com/pascalbaljetmedia/laravel-analytics-event-tracking): Laravel package to easily send events to Google Analytics.
+* [`Laravel Blade On Demand`](https://github.com/pascalbaljetmedia/laravel-blade-on-demand): Laravel package to compile Blade templates in memory.
+* [`Laravel FFMpeg`](https://github.com/pascalbaljetmedia/laravel-ffmpeg): This package provides an integration with FFmpeg for Laravel. The storage of the files is handled by Laravel's Filesystem.
+* [`Laravel Paddle`](https://github.com/pascalbaljetmedia/laravel-paddle): Paddle.com API integration for Laravel with support for webhooks/events.
+* [`Laravel WebDAV`](https://github.com/pascalbaljetmedia/laravel-webdav): WebDAV driver for Laravel's Filesystem.
+
 ### Security
 
 If you discover any security related issues, please email pascal@protone.media instead of using the issue tracker.
@@ -144,3 +155,7 @@ If you discover any security related issues, please email pascal@protone.media i
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+## Treeware
+
+This package is [Treeware](https://treeware.earth). If you use it in production, then we ask that you [**buy the world a tree**](https://plant.treeware.earth/pascalbaljetmedia/laravel-cross-eloquent-search) to thank us for our work. By contributing to the Treeware forest you’ll be creating employment for local families and restoring wildlife habitats.
