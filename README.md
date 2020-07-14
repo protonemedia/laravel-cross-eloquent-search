@@ -56,7 +56,7 @@ Search::add(Post::class, 'title', 'publihed_at')
 
 ### Start search term with wildcard
 
-By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to start with as well, you can call the `startWithWildcard` method. This will result in `%apple%` and `%ios`.
+By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to start with as well, you can call the `startWithWildcard` method. This will result in `%apple%` and `%ios%`.
 
 ```php
 Search::add(Post::class, 'title')
