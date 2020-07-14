@@ -22,6 +22,11 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 * Use [constraints](https://laravel.com/docs/master/eloquent#retrieving-models) and [scoped queries](https://laravel.com/docs/master/eloquent#query-scopes).
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
 * In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
+* Zero third-party dependencies
+
+## Blogpost
+
+If you want to know more about the background of this package, please read [the blogpost](https://protone.media/blog/search-through-multiple-eloquent-models-with-our-latest-laravel-package).
 
 ## Installation
 
