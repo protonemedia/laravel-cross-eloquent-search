@@ -80,6 +80,15 @@ Search::add(Post::class, 'title')
     ->get('"macos big sur"');
 ```
 
+You can disable the parsing of the search term by calling the `dontParseTerm` method, which gives you the same results as using double-quotes.
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->dontParseTerm()
+    ->get('macos big sur');
+```
+
 ### Pagination
 
 We highly recommend to paginate your results. Call the `paginate` method before the `get` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.

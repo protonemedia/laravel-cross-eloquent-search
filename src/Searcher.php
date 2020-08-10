@@ -42,6 +42,11 @@ class Searcher
     private string $pageName = 'page';
 
     /**
+     * Parse the search term into multiple terms.
+     */
+    private bool $parseTerm = true;
+
+    /**
      * Current page.
      *
      * @var int|null
@@ -78,6 +83,16 @@ class Searcher
     public function orderByDesc(): self
     {
         $this->orderByDirection = 'desc';
+
+        return $this;
+    }
+
+    /**
+     * Disable the parsing of the search term.
+     */
+    public function dontParseTerm(): self
+    {
+        $this->parseTerm = false;
 
         return $this;
     }
@@ -142,7 +157,9 @@ class Searcher
      */
     private function initializeTerms(string $terms): self
     {
-        $this->terms = Collection::make(str_getcsv($terms, ' ', '"'))
+        $terms = $this->parseTerm ? str_getcsv($terms, ' ', '"') : $terms;
+
+        $this->terms = Collection::wrap($terms)
             ->filter()
             ->map(fn ($term) => ($this->startWithWildcard ? '%' : '') . "{$term}%");
 

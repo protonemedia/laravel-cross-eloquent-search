@@ -72,6 +72,24 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_has_an_option_to_dont_split_the_search_term()
+    {
+        $postA  = Post::create(['title' => 'foo']);
+        $postB  = Post::create(['title' => 'bar bar']);
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar']);
+
+        $results = Search::add(Post::class, 'title')
+            ->add(Video::class, 'title')
+            ->dontParseTerm()
+            ->get('bar bar');
+
+        $this->assertCount(1, $results);
+
+        $this->assertTrue($results->contains($postB));
+    }
+
+    /** @test */
     public function it_throws_an_exception_when_the_query_is_empty()
     {
         try {
