@@ -90,6 +90,24 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_has_a_method_to_parse_the_terms()
+    {
+        $this->assertEquals(['foo'], Search::parseTerms('foo')->all());
+        $this->assertEquals(['foo'], Search::parseTerms('foo ')->all());
+        $this->assertEquals(['foo'], Search::parseTerms(' foo ')->all());
+        $this->assertEquals(['foo', 'bar'], Search::parseTerms('foo bar')->all());
+        $this->assertEquals(['foo bar'], Search::parseTerms('"foo bar"')->all());
+
+        $array = [];
+
+        Search::parseTerms('foo bar', function ($term, $key) use (&$array) {
+            $array[] = $key . $term;
+        });
+
+        $this->assertEquals(['0foo','1bar'], $array);
+    }
+
+    /** @test */
     public function it_throws_an_exception_when_the_query_is_empty()
     {
         try {

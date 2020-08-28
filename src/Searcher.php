@@ -149,6 +149,23 @@ class Searcher
     }
 
     /**
+     * Parse the terms and loop through them with the optional callable.
+     *
+     * @param string $terms
+     * @param callable $callback
+     * @return \Illuminate\Support\Collection
+     */
+    public function parseTerms(string $terms, callable $callback = null): Collection
+    {
+        return Collection::make(str_getcsv($terms, ' ', '"'))
+            ->filter()
+            ->values()
+            ->when($callback, function ($terms, $callback) {
+                return $terms->each(fn ($value, $key) => $callback($value, $key));
+            });
+    }
+
+    /**
      * Creates a collection out of the given search term.
      *
      * @param string $terms
@@ -157,7 +174,7 @@ class Searcher
      */
     private function initializeTerms(string $terms): self
     {
-        $terms = $this->parseTerm ? str_getcsv($terms, ' ', '"') : $terms;
+        $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
 
         $this->terms = Collection::wrap($terms)
             ->filter()

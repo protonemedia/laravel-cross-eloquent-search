@@ -135,6 +135,22 @@ Search::add(Post::with('comments'), 'title')
     ->get('guitar');
 ```
 
+### Standalone parser
+
+You can use the parser with the `parseTerms` method:
+
+```php
+$terms = Search::parseTerms('drums guitar');
+```
+
+You can also pass in a callback as a second argument to loop through each term:
+
+```php
+Search::parseTerms('drums guitar', function($term, $key) {
+    //
+});
+```
+
 ### Testing
 
 ``` bash

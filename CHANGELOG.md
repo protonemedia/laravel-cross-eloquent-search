@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 1.2.0 - 2020-08-28
+
+- standalone search terms parser
+
 ## 1.1.0 - 2020-08-10
 
 - option to disable the parsing of the search term
