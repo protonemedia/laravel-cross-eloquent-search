@@ -12,7 +12,7 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 
 * PHP 7.4+
 * MySQL 5.7+
-* Laravel 6.0 / 7.0
+* Laravel 6.0 and higher
 
 ## Features
 
