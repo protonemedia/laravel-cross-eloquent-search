@@ -8,6 +8,8 @@
 
 This Laravel package allows you to search through multiple Eloquent models. It supports sorting, pagination, scoped queries, eager load relationships and searching through single or multiple columns.
 
+### 📺 Curious about an implementation? Watch the live stream on 26 October at 14:00 CET: [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
+
 ## Requirements
 
 * PHP 7.4+
