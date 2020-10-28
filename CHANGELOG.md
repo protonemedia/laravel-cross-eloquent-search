@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 1.4.0 - 2020-10-28
+
+- Allow empty search terms
+- Added `new()` method method
+
+## 1.3.1 - 2020-10-28
+
+- Docs
+
 ## 1.3.0 - 2020-09-24
 
 - Support for Laravel 8.0

@@ -120,6 +120,23 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_search_without_a_term()
+    {
+        Post::create(['title' => 'foo']);
+        Post::create(['title' => 'bar']);
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'bar']);
+
+        $results = Search::new()
+            ->add(Post::class, 'title')
+            ->add(Video::class, 'title')
+            ->allowEmptySearchQuery()
+            ->get();
+
+        $this->assertCount(4, $results);
+    }
+
+    /** @test */
     public function it_can_search_on_the_left_side_of_the_term()
     {
         Video::create(['title' => 'foo']);

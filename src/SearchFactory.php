@@ -9,6 +9,16 @@ class SearchFactory
     use ForwardsCalls;
 
     /**
+     * Returns a new Searcher instance.
+     *
+     * @return \ProtoneMedia\LaravelCrossEloquentSearch\Searcher
+     */
+    public function new(): Searcher
+    {
+        return new Searcher;
+    }
+
+    /**
     * Handle dynamic method calls into a new Searcher instance.
     *
     * @param  string  $method
@@ -18,7 +28,7 @@ class SearchFactory
     public function __call($method, $parameters)
     {
         return $this->forwardCallTo(
-            new Searcher,
+            $this->new(),
             $method,
             $parameters
         );

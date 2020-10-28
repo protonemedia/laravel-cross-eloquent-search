@@ -27,6 +27,11 @@ class Searcher
     private bool $startWithWildcard = false;
 
     /**
+     * Allow an empty search query.
+     */
+    private bool $allowEmptySearchQuery = false;
+
+    /**
      * Collection of search terms.
      */
     private Collection $terms;
@@ -93,6 +98,16 @@ class Searcher
     public function dontParseTerm(): self
     {
         $this->parseTerm = false;
+
+        return $this;
+    }
+
+    /**
+     * Allow empty search terms.
+     */
+    public function allowEmptySearchQuery(): self
+    {
+        $this->allowEmptySearchQuery = true;
 
         return $this;
     }
@@ -180,7 +195,7 @@ class Searcher
             ->filter()
             ->map(fn ($term) => ($this->startWithWildcard ? '%' : '') . "{$term}%");
 
-        if ($this->terms->isEmpty()) {
+        if (!$this->allowEmptySearchQuery && $this->terms->isEmpty()) {
             throw new EmptySearchQueryException;
         }
 
