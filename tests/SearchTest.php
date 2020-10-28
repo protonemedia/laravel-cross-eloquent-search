@@ -219,10 +219,11 @@ class SearchTest extends TestCase
             $postB->comments()->create(['body' => 'ok']);
         }
 
-        $results = Search::add(Post::with('comments'), 'title')
+        $results = Search::add(Post::with('comments')->withCount('comments'), 'title')
             ->get('foo');
 
         $this->assertCount(1, $results);
+        $this->assertEquals(10, $results->first()->comments_count);
         $this->assertTrue($results->first()->relationLoaded('comments'));
     }
 }
