@@ -8,7 +8,7 @@
 
 This Laravel package allows you to search through multiple Eloquent models. It supports sorting, pagination, scoped queries, eager load relationships and searching through single or multiple columns.
 
-### 📺 Curious about an implementation? Watch the live stream on 28 October at 14:00 CET: [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
+### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 
 ## Requirements
 
@@ -46,6 +46,15 @@ Start your search query by adding one or more models to search through. Call the
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 $results = Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->get('howto');
+```
+
+If you care about indentation, you can optionally use the `new` method on the facade:
+
+```php
+Search::new()
+    ->add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->get('howto');
 ```
@@ -135,6 +144,17 @@ Not much to explain here, but this is supported as well :)
 Search::add(Post::with('comments'), 'title')
     ->add(Video::with('likes'), 'title')
     ->get('guitar');
+```
+
+### Getting results without searching
+
+If you call the `get` method without a term or with an empty term, the package throws an `EmptySearchQueryException`. You can disable this behaviour with the `allowEmptySearchQuery` method.
+
+```php
+Search::add(Post::with('comments'), 'title')
+    ->add(Video::with('likes'), 'title')
+    ->allowEmptySearchQuery()
+    ->get();
 ```
 
 ### Standalone parser
