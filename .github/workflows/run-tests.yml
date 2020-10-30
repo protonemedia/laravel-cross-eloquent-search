@@ -4,11 +4,10 @@ on: [push, pull_request]
 
 jobs:
     test:
-        runs-on: ${{ matrix.os }}
+        runs-on: ubuntu-latest
         strategy:
             fail-fast: true
             matrix:
-                os: [ubuntu-latest, windows-latest]
                 php: [8.0, 7.4]
                 laravel: [8.*, 7.*, 6.*]
                 dependency-version: [prefer-lowest, prefer-stable]
@@ -20,7 +19,7 @@ jobs:
                     -   laravel: 6.*
                         testbench: 4.*
 
-        name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }} - ${{ matrix.os }}
+        name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
 
         services:
             mysql:
