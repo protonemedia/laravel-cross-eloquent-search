@@ -26,8 +26,8 @@ jobs:
                 image: mysql:5.7
                 env:
                     MYSQL_ALLOW_EMPTY_PASSWORD: yes
-                    MYSQL_USERNAME: forge
-                    MYSQL_DATABASE: forge
+                    MYSQL_USER: protone_media_db_test
+                    MYSQL_DATABASE: protone_media_db_test
                 ports:
                     - 3306
                 options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -58,4 +58,6 @@ jobs:
             -   name: Execute tests
                 run: vendor/bin/phpunit
                 env:
+                    DB_DATABASE: protone_media_db_test
+                    DB_USERNAME: protone_media_db_test
                     DB_PORT: ${{ job.services.mysql.ports[3306] }}
