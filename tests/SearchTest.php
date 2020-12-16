@@ -128,8 +128,8 @@ class SearchTest extends TestCase
         Video::create(['title' => 'bar']);
 
         $results = Search::new()
-            ->add(Post::class, 'title')
-            ->add(Video::class, 'title')
+            ->add(Post::class)->orderBy('updated_at')
+            ->add(Video::class)->orderBy('published_at')
             ->allowEmptySearchQuery()
             ->get();
 

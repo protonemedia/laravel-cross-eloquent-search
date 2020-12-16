@@ -44,6 +44,19 @@ class ModelToSearchThrough
     }
 
     /**
+     * Setter for the orderBy column.
+     *
+     * @param string $orderByColumn
+     * @return self
+     */
+    public function orderByColumn(string $orderByColumn): self
+    {
+        $this->orderByColumn = $orderByColumn;
+
+        return $this;
+    }
+
+    /**
      * Get a cloned instance of the builder.
      *
      * @return \Illuminate\Database\Eloquent\Builder

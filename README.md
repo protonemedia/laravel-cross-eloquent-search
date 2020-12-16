@@ -155,8 +155,19 @@ Search::add(Post::with('comments'), 'title')
 If you call the `get` method without a term or with an empty term, the package throws an `EmptySearchQueryException`. You can disable this behaviour with the `allowEmptySearchQuery` method.
 
 ```php
-Search::add(Post::with('comments'), 'title')
-    ->add(Video::with('likes'), 'title')
+Search::add(Post::with('comments'), 'title', 'published_at')
+    ->add(Video::with('likes'), 'title', 'released_at')
+    ->allowEmptySearchQuery()
+    ->get();
+```
+
+In this case, you can discard the second argument as well. With the `orderBy` method, you can set the column to sort by (previously the third argument):
+
+```php
+Search::add(Post::class)
+    ->orderBy('published_at')
+    ->add(Video::class)
+    ->orderBy('released_at')
     ->allowEmptySearchQuery()
     ->get();
 ```

@@ -120,7 +120,7 @@ class Searcher
      * @param string $orderByColumn
      * @return self
      */
-    public function add($query, $columns, string $orderByColumn = 'updated_at'): self
+    public function add($query, $columns = null, string $orderByColumn = 'updated_at'): self
     {
         $modelToSearchThrough = new ModelToSearchThrough(
             is_string($query) ? $query::query() : $query,
@@ -130,6 +130,13 @@ class Searcher
         );
 
         $this->modelsToSearchThrough->push($modelToSearchThrough);
+
+        return $this;
+    }
+
+    public function orderBy(string $orderByColumn): self
+    {
+        $this->modelsToSearchThrough->last()->orderByColumn($orderByColumn);
 
         return $this;
     }
