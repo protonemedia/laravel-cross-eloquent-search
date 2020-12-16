@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 1.7.0 - 2020-12-16
+
+- Added a `count` method.
+
 ## 1.6.0 - 2020-12-16
 
 - Allow empty search terms without selecting columns

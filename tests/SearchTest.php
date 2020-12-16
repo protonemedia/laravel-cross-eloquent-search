@@ -55,6 +55,21 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_count_the_results()
+    {
+        $postA  = Post::create(['title' => 'foo']);
+        $postB  = Post::create(['title' => 'bar']);
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
+
+        $count = Search::add(Post::class, 'title')
+            ->add(Video::class, ['title', 'subtitle'])
+            ->count('foo');
+
+        $this->assertEquals(3, $count);
+    }
+
+    /** @test */
     public function it_can_search_for_a_phrase()
     {
         $postA  = Post::create(['title' => 'foo']);

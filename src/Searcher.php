@@ -4,6 +4,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -287,12 +288,12 @@ class Searcher
     }
 
     /**
-     * Compiles all queries to one big one which binds everything together
-     * using UNION statements.
-     *
-     * @return \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
-     */
-    private function getIdAndOrderAttributes()
+      * Compiles all queries to one big one which binds everything together
+      * using UNION statements.
+      *
+      * @return
+      */
+    private function getCompiledQueryBuilder(): QueryBuilder
     {
         $queries = $this->buildQueries();
 
@@ -303,12 +304,22 @@ class Searcher
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
         // sort by the given columns and direction
-        $firstQuery->orderBy(DB::raw($this->makeOrderBy()), $this->orderByDirection);
+        return $firstQuery->orderBy(DB::raw($this->makeOrderBy()), $this->orderByDirection);
+    }
+
+    /**
+     * Paginates the compiled query or fetches all results.
+     *
+     * @return \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    private function getIdAndOrderAttributes()
+    {
+        $query = $this->getCompiledQueryBuilder();
 
         // get all results or limit the results by pagination
         return $this->perPage
-            ? $firstQuery->paginate($this->perPage, ['*'], $this->pageName, $this->page)
-            : $firstQuery->get();
+            ? $query->paginate($this->perPage, ['*'], $this->pageName, $this->page)
+            : $query->get();
 
         // the collection will be something like:
         //
@@ -356,6 +367,19 @@ class Searcher
         //         3 => VideoModel
         //     ],
         // ]
+    }
+
+    /**
+     * Retrieve the "count" result of the query.
+     *
+     * @param string $terms
+     * @return integer
+     */
+    public function count(string $terms = null): int
+    {
+        $this->initializeTerms($terms ?: '');
+
+        return $this->getCompiledQueryBuilder()->count();
     }
 
     /**

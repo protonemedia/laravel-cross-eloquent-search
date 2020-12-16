@@ -172,6 +172,16 @@ Search::add(Post::class)
     ->get();
 ```
 
+### Counting records
+
+You can count the number of results with the `count` method:
+
+```php
+Search::add(Post::published(), 'title')
+    ->add(Video::where('views', '>', 2500), 'title')
+    ->count('compile');
+```
+
 ### Standalone parser
 
 You can use the parser with the `parseTerms` method:
