@@ -134,6 +134,12 @@ class Searcher
         return $this;
     }
 
+    /**
+     * Set the 'orderBy' column of the latest added model.
+     *
+     * @param string $orderByColumn
+     * @return self
+     */
     public function orderBy(string $orderByColumn): self
     {
         $this->modelsToSearchThrough->last()->orderByColumn($orderByColumn);
