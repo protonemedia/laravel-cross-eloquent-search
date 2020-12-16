@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 1.6.0 - 2020-12-16
+
+- Allow empty search terms without selecting columns
+
+## 1.5.0 - 2020-10-30
+
+- Added support for PHP 8.0
+
 ## 1.4.0 - 2020-10-28
 
 - Allow empty search terms
@@ -17,12 +25,12 @@ All notable changes to `laravel-cross-eloquent-search` will be documented in thi
 
 ## 1.2.0 - 2020-08-28
 
-- standalone search terms parser
+- Standalone search terms parser
 
 ## 1.1.0 - 2020-08-10
 
-- option to disable the parsing of the search term
+- Option to disable the parsing of the search term
 
 ## 1.0.0 - 2020-07-08
 
-- initial release
+- Initial release
