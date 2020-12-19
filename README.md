@@ -119,6 +119,20 @@ Search::add(Post::class, 'title')
     ->get('build');
 ```
 
+You may also call `simplePaginate()` before calling `paginate()`. This will return an instance of `\Illuminate\Contracts\Pagination\Paginator` which is not length aware:
+
+```php
+Search::simplePaginate()
+    ->add(Post::class, 'title')
+    ->add(Video::class, 'title')
+
+    ->paginate()
+    // or
+    ->paginate($perPage = 15, $pageName = 'page', $page = 1)
+
+    ->get('build');
+```
+
 ### Constraints and scoped queries
 
 Instead of the class name, you can also pass an instance of the [Eloquent query builder](https://laravel.com/docs/master/eloquent#retrieving-models) to the `add` method. This allows you to add constraints to each model.
