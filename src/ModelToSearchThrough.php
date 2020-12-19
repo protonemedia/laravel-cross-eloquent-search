@@ -12,22 +12,22 @@ class ModelToSearchThrough
     /**
      * Builder to search through.
      */
-    private Builder $builder;
+    protected Builder $builder;
 
     /**
      * The columns to search through.
      */
-    private Collection $columns;
+    protected Collection $columns;
 
     /**
      * Order column.
      */
-    private string $orderByColumn;
+    protected string $orderByColumn;
 
     /**
      * Unique key of this instance.
      */
-    private int $key;
+    protected int $key;
 
     /**
      * @param \Illuminate\Database\Eloquent\Builder $builder
@@ -82,7 +82,7 @@ class ModelToSearchThrough
      *
      * @return \Illuminate\Database\Eloquent\Model
      */
-    private function getModel(): Model
+    protected function getModel(): Model
     {
         return $this->builder->getModel();
     }
@@ -108,7 +108,7 @@ class ModelToSearchThrough
      * @param string $column
      * @return string
      */
-    private function qualifyColumn(string $column): string
+    protected function qualifyColumn(string $column): string
     {
         return $this->getModel()->qualifyColumn($column);
     }

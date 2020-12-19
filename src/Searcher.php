@@ -15,49 +15,49 @@ class Searcher
     /**
      * Collection of models to search through.
      */
-    private Collection $modelsToSearchThrough;
+    protected Collection $modelsToSearchThrough;
 
     /**
      * Sort direction.
      */
-    private string $orderByDirection;
+    protected string $orderByDirection;
 
     /**
      * Start the search term with a wildcard.
      */
-    private bool $startWithWildcard = false;
+    protected bool $startWithWildcard = false;
 
     /**
      * Allow an empty search query.
      */
-    private bool $allowEmptySearchQuery = false;
+    protected bool $allowEmptySearchQuery = false;
 
     /**
      * Collection of search terms.
      */
-    private Collection $terms;
+    protected Collection $terms;
 
     /**
      * The number of items to be shown per page.
      */
-    private int $perPage = 15;
+    protected int $perPage = 15;
 
     /**
      * The query string variable used to store the page.
      */
-    private string $pageName = 'page';
+    protected string $pageName = 'page';
 
     /**
      * Parse the search term into multiple terms.
      */
-    private bool $parseTerm = true;
+    protected bool $parseTerm = true;
 
     /**
      * Current page.
      *
      * @var int|null
      */
-    private $page;
+    protected $page;
 
     /**
      * Initialises the instanace with a fresh Collection and default sort.
@@ -201,7 +201,7 @@ class Searcher
      * @throws \ProtoneMedia\LaravelCrossEloquentSearch\EmptySearchQueryException
      * @return self
      */
-    private function initializeTerms(string $terms): self
+    protected function initializeTerms(string $terms): self
     {
         $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
 
@@ -241,7 +241,7 @@ class Searcher
      * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $currentModel
      * @return array
      */
-    private function makeSelects(ModelToSearchThrough $currentModel): array
+    protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
             $qualifiedKeyName = $qualifiedOrderByColumnName = 'null';
@@ -264,7 +264,7 @@ class Searcher
      *
      * @return string
      */
-    private function makeOrderBy(): string
+    protected function makeOrderBy(): string
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
 
@@ -276,7 +276,7 @@ class Searcher
      *
      * @return \Illuminate\Support\Collection
      */
-    private function buildQueries(): Collection
+    protected function buildQueries(): Collection
     {
         return $this->modelsToSearchThrough->map(function (ModelToSearchThrough $modelToSearchThrough) {
             return $modelToSearchThrough->getFreshBuilder()
@@ -293,7 +293,7 @@ class Searcher
       *
       * @return
       */
-    private function getCompiledQueryBuilder(): QueryBuilder
+    protected function getCompiledQueryBuilder(): QueryBuilder
     {
         $queries = $this->buildQueries();
 
@@ -312,7 +312,7 @@ class Searcher
      *
      * @return \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    private function getIdAndOrderAttributes()
+    protected function getIdAndOrderAttributes()
     {
         $query = $this->getCompiledQueryBuilder();
 
@@ -345,7 +345,7 @@ class Searcher
      * @param \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator $results
      * @return \Illuminate\Support\Collection
      */
-    private function getModelsPerType($results)
+    protected function getModelsPerType($results)
     {
         return $this->modelsToSearchThrough
             ->keyBy->getModelKey()
