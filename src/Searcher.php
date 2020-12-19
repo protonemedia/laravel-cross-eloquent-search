@@ -53,6 +53,11 @@ class Searcher
     protected bool $parseTerm = true;
 
     /**
+     * Use simplePaginate() on Eloquent\Builder vs paginate()
+     */
+    protected bool $simplePaginate = false;
+
+    /**
      * Current page.
      *
      * @var int|null
@@ -109,6 +114,16 @@ class Searcher
     public function allowEmptySearchQuery(): self
     {
         $this->allowEmptySearchQuery = true;
+
+        return $this;
+    }
+
+    /**
+     * Switch to using simplePaginate() on Eloquent\Builder
+     */
+    public function simplePaginate(): self
+    {
+        $this->simplePaginate = true;
 
         return $this;
     }
@@ -316,9 +331,12 @@ class Searcher
     {
         $query = $this->getCompiledQueryBuilder();
 
+        // Determine the pagination method to call on Eloquent\Builder
+        $paginateMethod = $this->simplePaginate ? 'simplePaginate' : 'paginate';
+
         // get all results or limit the results by pagination
         return $this->perPage
-            ? $query->paginate($this->perPage, ['*'], $this->pageName, $this->page)
+            ? $query->{$paginateMethod}($this->perPage, ['*'], $this->pageName, $this->page)
             : $query->get();
 
         // the collection will be something like:
