@@ -63,6 +63,24 @@ Search::new()
     ->get('howto');
 ```
 
+You can add multiple models at once by using the `addMany` method:
+
+```php
+Search::addMany([
+    [Post::class, 'title'],
+    [Video::class, 'title'],
+])->get('howto');
+```
+
+There's also an `addWhen` method, that adds the model when the first argument given to the method evaluates to `true`:
+
+```php
+Search::new()
+    ->addWhen($user, Post::class, 'title')
+    ->addWhen($user->isAdmin(), Video::class, 'title')
+    ->get('howto');
+```
+
 ### Sorting
 
 If you want to sort the results by another column, you can pass that column to the `add` method as a third parameter. Call the `orderByDesc` method to sort the results in descending order.

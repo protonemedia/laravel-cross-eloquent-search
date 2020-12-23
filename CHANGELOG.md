@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 1.9.0 - 2020-12-23
+
+- Support for `addMany` and `andWhen` methods.
+
 ## 1.8.0 - 2020-12-23
 
 - Support for simple pagination (credit to @mewejo).

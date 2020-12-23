@@ -153,6 +153,40 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_conditionally_add_queries()
+    {
+        $postA = Post::create(['title' => 'foo']);
+        Post::create(['title' => 'bar']);
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'bar']);
+
+        $results = Search::new()
+            ->addWhen(true, Post::class, 'title')
+            ->addWhen(false, Video::class, 'title', 'published_at')
+            ->get('foo');
+
+        $this->assertCount(1, $results);
+        $this->assertTrue($results->first()->is($postA));
+    }
+
+    /** @test */
+    public function it_can_add_many_models_at_once()
+    {
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
+
+        $results = Search::addMany([
+            [Video::class, 'title'],
+            [Video::class, 'subtitle', 'created_at'],
+        ])->get('foo');
+
+        $this->assertCount(2, $results);
+
+        $this->assertTrue($results->contains($videoA));
+        $this->assertTrue($results->contains($videoB));
+    }
+
+    /** @test */
     public function it_can_search_on_the_left_side_of_the_term()
     {
         Video::create(['title' => 'foo']);
