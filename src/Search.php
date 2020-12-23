@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher startWithWildcard()
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher add($query, $columns, string $orderByColumn = 'updated_at')
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher paginate($perPage = 15, $pageName = 'page', $page = null)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher simplePaginate()
+ * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher simplePaginate($perPage = 15, $pageName = 'page', $page = null)
  * @method static \Illuminate\Support\Collection parseTerms(string $terms, callable $callback = null)
  * @method static \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator get(string $terms = null)
  *

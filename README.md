@@ -119,16 +119,15 @@ Search::add(Post::class, 'title')
     ->get('build');
 ```
 
-You may also call `simplePaginate()` before calling `paginate()`. This will return an instance of `\Illuminate\Contracts\Pagination\Paginator` which is not length aware:
+You may also use [simple pagination](https://laravel.com/docs/master/pagination#simple-pagination). This will return an instance of `\Illuminate\Contracts\Pagination\Paginator`, which is not length aware:
 
 ```php
-Search::simplePaginate()
-    ->add(Post::class, 'title')
+Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
 
-    ->paginate()
+    ->simplePaginate()
     // or
-    ->paginate($perPage = 15, $pageName = 'page', $page = 1)
+    ->simplePaginate($perPage = 15, $pageName = 'page', $page = 1)
 
     ->get('build');
 ```

@@ -275,12 +275,12 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_use_simple_paginator()
     {
-        $search = Search::simplePaginate()
+        $search = Search::new()
             ->add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $results = $search->paginate()->get('foo');
+        $results = $search->simplePaginate()->get('foo');
 
         $this->assertInstanceOf(Paginator::class, $results);
     }
@@ -293,13 +293,13 @@ class SearchTest extends TestCase
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
         $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
 
-        $search = Search::simplePaginate()
+        $search = Search::new()
             ->add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $resultsPage1 = $search->paginate(2, 'page', 1)->get('foo');
-        $resultsPage2 = $search->paginate(2, 'page', 2)->get('foo');
+        $resultsPage1 = $search->simplePaginate(2, 'page', 1)->get('foo');
+        $resultsPage2 = $search->simplePaginate(2, 'page', 2)->get('foo');
 
         $this->assertInstanceOf(Paginator::class, $resultsPage1);
         $this->assertInstanceOf(Paginator::class, $resultsPage2);

@@ -119,16 +119,6 @@ class Searcher
     }
 
     /**
-     * Switch to using simplePaginate() on Eloquent\Builder
-     */
-    public function simplePaginate(): self
-    {
-        $this->simplePaginate = true;
-
-        return $this;
-    }
-
-    /**
      * Add a model to search through.
      *
      * @param \Illuminate\Database\Eloquent\Builder|string $query
@@ -185,9 +175,27 @@ class Searcher
      */
     public function paginate($perPage = 15, $pageName = 'page', $page = null): self
     {
-        $this->page     = $page ?: Paginator::resolveCurrentPage($pageName);
-        $this->pageName = $pageName;
-        $this->perPage  = $perPage;
+        $this->page           = $page ?: Paginator::resolveCurrentPage($pageName);
+        $this->pageName       = $pageName;
+        $this->perPage        = $perPage;
+        $this->simplePaginate = false;
+
+        return $this;
+    }
+
+    /**
+     * Paginate using simple pagination.
+     *
+     * @param integer $perPage
+     * @param string $pageName
+     * @param int|null $page
+     * @return self
+     */
+    public function simplePaginate($perPage = 15, $pageName = 'page', $page = null): self
+    {
+        $this->paginate($perPage, $pageName, $page);
+
+        $this->simplePaginate = true;
 
         return $this;
     }
