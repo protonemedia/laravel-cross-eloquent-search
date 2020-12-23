@@ -3,6 +3,7 @@
 namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use ProtoneMedia\LaravelCrossEloquentSearch\EmptySearchQueryException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
@@ -257,5 +258,58 @@ class SearchTest extends TestCase
         $this->assertCount(1, $results);
         $this->assertEquals(10, $results->first()->comments_count);
         $this->assertTrue($results->first()->relationLoaded('comments'));
+    }
+
+    /** @test */
+    public function it_uses_length_aware_paginator_by_default()
+    {
+        $search = Search::add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc();
+
+        $results = $search->paginate()->get('foo');
+
+        $this->assertInstanceOf(LengthAwarePaginator::class, $results);
+    }
+
+    /** @test */
+    public function it_can_use_simple_paginator()
+    {
+        $search = Search::new()
+            ->add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc();
+
+        $results = $search->simplePaginate()->get('foo');
+
+        $this->assertInstanceOf(Paginator::class, $results);
+    }
+
+    /** @test */
+    public function it_can_simple_paginate_the_results()
+    {
+        $postA  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+        $postB  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
+        $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $search = Search::new()
+            ->add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc();
+
+        $resultsPage1 = $search->simplePaginate(2, 'page', 1)->get('foo');
+        $resultsPage2 = $search->simplePaginate(2, 'page', 2)->get('foo');
+
+        $this->assertInstanceOf(Paginator::class, $resultsPage1);
+        $this->assertInstanceOf(Paginator::class, $resultsPage2);
+
+        $this->assertCount(2, $resultsPage1);
+
+        $this->assertTrue($resultsPage1->first()->is($videoB));
+        $this->assertTrue($resultsPage1->last()->is($postB));
+
+        $this->assertTrue($resultsPage2->first()->is($postA));
+        $this->assertTrue($resultsPage2->last()->is($videoA));
     }
 }
