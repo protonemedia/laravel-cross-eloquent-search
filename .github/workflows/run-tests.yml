@@ -10,6 +10,7 @@ jobs:
             matrix:
                 php: [8.0, 7.4]
                 laravel: [8.*, 7.*, 6.*]
+                db: [mysql, postgres, sqlite]
                 dependency-version: [prefer-lowest, prefer-stable]
                 include:
                     -   laravel: 8.*
@@ -23,6 +24,7 @@ jobs:
 
         services:
             mysql:
+                if: ${{ matrix.db == 'mysql' }}
                 image: mysql:5.7
                 env:
                     MYSQL_ALLOW_EMPTY_PASSWORD: no
@@ -33,7 +35,16 @@ jobs:
                 ports:
                     - 3306
                 options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
+            postgres:
+                if: ${{ matrix.db == 'postgres' }}
+                image: postgres:10.8
+                env:
+                    POSTGRES_USER: protone_media_db_test
+                    POSTGRES_PASSWORD: secret
+                    POSTGRES_DB: protone_media_db_test
+                ports:
+                    - 5432:5432
+                options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
         steps:
             -   name: Checkout code
@@ -57,10 +68,29 @@ jobs:
                     composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
                     composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
 
-            -   name: Execute tests
+            -   name: Execute tests (MySQL)
                 run: vendor/bin/phpunit
+                if: ${{ matrix.db == 'mysql' }}
                 env:
                     DB_DATABASE: protone_media_db_test
                     DB_USERNAME: protone_media_db_test
                     DB_PASSWORD: secret
                     DB_PORT: ${{ job.services.mysql.ports[3306] }}
+
+            -   name: Execute tests (PostgreSQL)
+                run: vendor/bin/phpunit
+                if: ${{ matrix.db == 'postgres' }}
+                env:
+                    DB_CONNECTION: pgsql
+                    DB_HOST: postgres
+                    DB_DATABASE: protone_media_db_test
+                    DB_USERNAME: protone_media_db_test
+                    DB_PASSWORD: secret
+                    DB_PORT: ${{ job.services.postgres.ports[5432] }}
+
+            -   name: Execute tests (SQLite)
+                run: vendor/bin/phpunit
+                if: ${{ matrix.db == 'sqlite' }}
+                env:
+                    DB_CONNECTION: sqlite
+                    DB_DATABASE: ':memory:'
