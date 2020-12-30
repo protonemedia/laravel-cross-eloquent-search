@@ -93,9 +93,10 @@ class ModelToSearchThrough
      * @param string $suffix
      * @return string
      */
-    public function getModelKey($suffix = 'key'): string
+    public function getModelKey($suffix = 'key', $prefix = 'lceq'): string
     {
         return implode('_', [
+            $prefix,
             $this->key,
             Str::snake(class_basename($this->getModel())),
             $suffix,
