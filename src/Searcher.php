@@ -131,7 +131,7 @@ class Searcher
         $modelToSearchThrough = new ModelToSearchThrough(
             is_string($query) ? $query::query() : $query,
             Collection::wrap($columns),
-            $orderByColumn ?? $query::UPDATED_AT,
+            $orderByColumn ?? get_class(new $query)::UPDATED_AT,
             $this->modelsToSearchThrough->count()
         );
 
