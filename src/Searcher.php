@@ -126,12 +126,12 @@ class Searcher
      * @param string $orderByColumn
      * @return self
      */
-    public function add($query, $columns = null, string $orderByColumn = 'updated_at'): self
+    public function add($query, $columns = null, string $orderByColumn = null): self
     {
         $modelToSearchThrough = new ModelToSearchThrough(
             is_string($query) ? $query::query() : $query,
             Collection::wrap($columns),
-            $orderByColumn,
+            $orderByColumn ?? $query::UPDATED_AT,
             $this->modelsToSearchThrough->count()
         );
 
@@ -149,7 +149,7 @@ class Searcher
      * @param string $orderByColumn
      * @return self
      */
-    public function addWhen($value, $query, $columns = null, string $orderByColumn = 'updated_at'): self
+    public function addWhen($value, $query, $columns = null, string $orderByColumn = null): self
     {
         if (!$value) {
             return $this;
