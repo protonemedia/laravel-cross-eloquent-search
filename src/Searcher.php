@@ -128,10 +128,12 @@ class Searcher
      */
     public function add($query, $columns = null, string $orderByColumn = null): self
     {
+        $queryBuilder = is_string($query) ? $query::query() : $query;
+
         $modelToSearchThrough = new ModelToSearchThrough(
-            is_string($query) ? $query::query() : $query,
+            $queryBuilder,
             Collection::wrap($columns),
-            $orderByColumn ?? (String) constant("{$query}::UPDATED_AT"),
+            $orderByColumn ?: $queryBuilder->getUpdatedAtColumn(),
             $this->modelsToSearchThrough->count()
         );
 
