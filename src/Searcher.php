@@ -23,14 +23,19 @@ class Searcher
     protected string $orderByDirection;
 
     /**
-     * Start the search term with a wildcard.
+     * Begin the search term with a wildcard.
      */
-    protected bool $startWithWildcard = false;
+    protected bool $beginWithWildcard = false;
 
     /**
-     * Allow an empty search query.
+     * End the search term with a wildcard.
      */
-    protected bool $allowEmptySearchQuery = false;
+    protected bool $endWithWildcard = true;
+
+    /**
+     * Where operator.
+     */
+    protected string $whereOperator = 'like';
 
     /**
      * Collection of search terms.
@@ -109,16 +114,6 @@ class Searcher
     }
 
     /**
-     * Allow empty search terms.
-     */
-    public function allowEmptySearchQuery(): self
-    {
-        $this->allowEmptySearchQuery = true;
-
-        return $this;
-    }
-
-    /**
      * Add a model to search through.
      *
      * @param \Illuminate\Database\Eloquent\Builder|string $query
@@ -126,12 +121,14 @@ class Searcher
      * @param string $orderByColumn
      * @return self
      */
-    public function add($query, $columns = null, string $orderByColumn = 'updated_at'): self
+    public function add($query, $columns = null, string $orderByColumn = null): self
     {
+        $builder = is_string($query) ? $query::query() : $query;
+
         $modelToSearchThrough = new ModelToSearchThrough(
-            is_string($query) ? $query::query() : $query,
+            $builder,
             Collection::wrap($columns),
-            $orderByColumn,
+            $orderByColumn ?: $builder->getModel()->getUpdatedAtColumn(),
             $this->modelsToSearchThrough->count()
         );
 
@@ -187,13 +184,39 @@ class Searcher
     }
 
     /**
-     * Let's each search term start with a wildcard.
+     * Let's each search term begin with a wildcard.
+     *
+     * @param boolean $state
+     * @return self
+     */
+    public function beginWithWildcard($state = true): self
+    {
+        $this->beginWithWildcard = $state;
+
+        return $this;
+    }
+
+    /**
+     * Let's each search term end with a wildcard.
+     *
+     * @param boolean $state
+     * @return self
+     */
+    public function endWithWildcard($state = true): self
+    {
+        $this->endWithWildcard = $state;
+
+        return $this;
+    }
+
+    /**
+     * Use 'sounds like' operator instead of 'like'.
      *
      * @return self
      */
-    public function startWithWildcard(): self
+    public function soundsLike(): self
     {
-        $this->startWithWildcard = true;
+        $this->whereOperator = 'sounds like';
 
         return $this;
     }
@@ -263,11 +286,13 @@ class Searcher
 
         $this->terms = Collection::wrap($terms)
             ->filter()
-            ->map(fn ($term) => ($this->startWithWildcard ? '%' : '') . "{$term}%");
-
-        if (!$this->allowEmptySearchQuery && $this->terms->isEmpty()) {
-            throw new EmptySearchQueryException;
-        }
+            ->map(function ($term) {
+                return implode([
+                    $this->beginWithWildcard ? '%' : '',
+                    $term,
+                    $this->endWithWildcard ? '%' : '',
+                ]);
+            });
 
         return $this;
     }
@@ -285,7 +310,7 @@ class Searcher
     {
         $builder->where(function ($query) use ($modelToSearchThrough) {
             $modelToSearchThrough->getQualifiedColumns()->each(
-                fn ($field) => $this->terms->each(fn ($term) => $query->orWhere($field, 'like', $term))
+                fn ($field) => $this->terms->each(fn ($term) => $query->orWhere($field, $this->whereOperator, $term))
             );
         });
     }

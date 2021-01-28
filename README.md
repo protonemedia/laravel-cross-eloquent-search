@@ -44,7 +44,9 @@ composer require protonemedia/laravel-cross-eloquent-search
 
 ## Usage
 
-Start your search query by adding one or more models to search through. Call the `add` method with the class name of the model and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results. By default, the results are sorted in ascending order by the `updated_at` column.
+Start your search query by adding one or more models to search through. Call the `add` method with the class name of the model and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.
+
+By default, the results are sorted in ascending order by the *updated* column. In most cases, this column is `updated_at`. If you've [customized](https://laravel.com/docs/master/eloquent#timestamps) your model's `UPDATED_AT` constant, or overwritten the `getUpdatedAtColumn` method, this package will use the customized column.
 
 ```php
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
@@ -81,25 +83,26 @@ Search::new()
     ->get('howto');
 ```
 
-### Sorting
+### Wildcards
 
-If you want to sort the results by another column, you can pass that column to the `add` method as a third parameter. Call the `orderByDesc` method to sort the results in descending order.
-
-```php
-Search::add(Post::class, 'title', 'publihed_at')
-    ->add(Video::class, 'title', 'released_at')
-    ->orderByDesc()
-    ->get('learn');
-```
-
-### Start search term with wildcard
-
-By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to start with as well, you can call the `startWithWildcard` method. This will result in `%apple%` and `%ios%`.
+By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to begin with as well, you can call the `beginWithWildcard` method. This will result in `%apple%` and `%ios%`.
 
 ```php
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->startWithWildcard()
+    ->beginWithWildcard()
+    ->get('os');
+```
+
+*Note: in previous versions of this package, this method was called `startWithWildcard()`.*
+
+If you want to disable the behaviour where a wildcard is appended to the terms, you should call the `endWithWildcard` method with `false`:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->beginWithWildcard()
+    ->endWithWildcard(false)
     ->get('os');
 ```
 
@@ -120,6 +123,17 @@ Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->dontParseTerm()
     ->get('macos big sur');
+```
+
+### Sorting
+
+If you want to sort the results by another column, you can pass that column to the `add` method as a third parameter. Call the `orderByDesc` method to sort the results in descending order.
+
+```php
+Search::add(Post::class, 'title', 'publihed_at')
+    ->add(Video::class, 'title', 'released_at')
+    ->orderByDesc()
+    ->get('learn');
 ```
 
 ### Pagination
@@ -170,6 +184,17 @@ Search::add(Post::class, ['title', 'body'])
     ->get('eloquent');
 ```
 
+### Sounds like
+
+
+
+```php
+Search::new()
+    ->add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->soundsLike()
+    ->get('larafel');
+```
 
 ### Eager load relationships
 
@@ -183,16 +208,7 @@ Search::add(Post::with('comments'), 'title')
 
 ### Getting results without searching
 
-If you call the `get` method without a term or with an empty term, the package throws an `EmptySearchQueryException`. You can disable this behaviour with the `allowEmptySearchQuery` method.
-
-```php
-Search::add(Post::with('comments'), 'title', 'published_at')
-    ->add(Video::with('likes'), 'title', 'released_at')
-    ->allowEmptySearchQuery()
-    ->get();
-```
-
-In this case, you can discard the second argument as well. With the `orderBy` method, you can set the column to sort by (previously the third argument):
+You call the `get` method without a term or with an empty term. In this case, you can discard the second argument of the `add` method. With the `orderBy` method, you can set the column to sort by (previously the third argument):
 
 ```php
 Search::add(Post::class)
