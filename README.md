@@ -186,7 +186,7 @@ Search::add(Post::class, ['title', 'body'])
 
 ### Sounds like
 
-
+MySQL has a *soundex* algorithm built-in so you can search for terms that sound almost the same. You can use this feature by calling the `soundsLike` method:
 
 ```php
 Search::new()
