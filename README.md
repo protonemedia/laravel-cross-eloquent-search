@@ -42,6 +42,11 @@ You can install the package via composer:
 composer require protonemedia/laravel-cross-eloquent-search
 ```
 
+## Upgrading from v1
+
+* The `startWithWildcard` method has been renamed to `beginWithWildcard`.
+* The default order column is now evaluated by the `getUpdatedAtColumn` method. Previously it was hard-coded to `updated_at`,
+
 ## Usage
 
 Start your search query by adding one or more models to search through. Call the `add` method with the class name of the model and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.

@@ -182,15 +182,6 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_search_on_the_right_side_of_the_term()
-    {
-        Video::create(['title' => 'foo']);
-
-        $this->assertCount(0, Search::add(Video::class, 'title')->get('fo'));
-        $this->assertCount(1, Search::add(Video::class, 'title')->endWithWildcard()->get('fo'));
-    }
-
-    /** @test */
     public function it_can_use_the_sounds_like_operator()
     {
         Video::create(['title' => 'laravel']);
