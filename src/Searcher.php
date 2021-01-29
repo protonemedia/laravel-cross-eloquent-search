@@ -151,7 +151,7 @@ class Searcher
      * @param string $orderByColumn
      * @return self
      */
-    public function addWhen($value, $query, $columns = null, string $orderByColumn = 'updated_at'): self
+    public function addWhen($value, $query, $columns = null, string $orderByColumn = null): self
     {
         if (!$value) {
             return $this;
@@ -194,7 +194,7 @@ class Searcher
      * @param boolean $state
      * @return self
      */
-    public function beginWithWildcard($state = true): self
+    public function beginWithWildcard(bool $state = true): self
     {
         $this->beginWithWildcard = $state;
 
@@ -207,7 +207,7 @@ class Searcher
      * @param boolean $state
      * @return self
      */
-    public function endWithWildcard($state = true): self
+    public function endWithWildcard(bool $state = true): self
     {
         $this->endWithWildcard = $state;
 
@@ -219,7 +219,7 @@ class Searcher
      *
      * @return self
      */
-    public function soundsLike($state = true): self
+    public function soundsLike(bool $state = true): self
     {
         $this->soundsLike = $state;
 
