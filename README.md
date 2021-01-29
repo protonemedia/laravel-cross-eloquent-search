@@ -45,8 +45,8 @@ composer require protonemedia/laravel-cross-eloquent-search
 ## Upgrading from v1
 
 * The `startWithWildcard` method has been renamed to `beginWithWildcard`.
-* The default order column is now evaluated by the `getUpdatedAtColumn` method. Previously it was hard-coded to `updated_at`,
-* The `allowEmptySearchQuery` method and `EmptySearchQueryException` class have been removed.
+* The default order column is now evaluated by the `getUpdatedAtColumn` method. Previously it was hard-coded to `updated_at`. You still can use [another column](#sorting) to order by.
+* The `allowEmptySearchQuery` method and `EmptySearchQueryException` class have been removed, but you can still [get results without searching](#https://github.com/protonemedia/laravel-cross-eloquent-search/tree/v2#getting-results-without-searching).
 
 ## Usage
 
