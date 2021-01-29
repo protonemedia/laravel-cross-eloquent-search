@@ -196,8 +196,8 @@ MySQL has a *soundex* algorithm built-in so you can search for terms that sound 
 
 ```php
 Search::new()
-    ->add(Post::class, 'title')
-    ->add(Video::class, 'title')
+    ->add(Post::class, 'framework')
+    ->add(Video::class, 'framework')
     ->soundsLike()
     ->get('larafel');
 ```
