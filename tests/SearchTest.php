@@ -5,7 +5,6 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
-use ProtoneMedia\LaravelCrossEloquentSearch\EmptySearchQueryException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 class SearchTest extends TestCase
@@ -124,18 +123,6 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_throws_an_exception_when_the_query_is_empty()
-    {
-        try {
-            Search::get('');
-        } catch (EmptySearchQueryException $exception) {
-            return $this->assertTrue(true);
-        }
-
-        $this->fail('Should have thrown EmptySearchQueryException.');
-    }
-
-    /** @test */
     public function it_can_search_without_a_term()
     {
         Post::create(['title' => 'foo']);
@@ -146,7 +133,6 @@ class SearchTest extends TestCase
         $results = Search::new()
             ->add(Post::class)->orderBy('updated_at')
             ->add(Video::class)->orderBy('published_at')
-            ->allowEmptySearchQuery()
             ->get();
 
         $this->assertCount(4, $results);
@@ -191,8 +177,17 @@ class SearchTest extends TestCase
     {
         Video::create(['title' => 'foo']);
 
-        $this->assertCount(0, Search::add(Video::class, 'title')->get('oo'));
-        $this->assertCount(1, Search::add(Video::class, 'title')->startWithWildcard()->get('oo'));
+        $this->assertCount(1, Search::add(Video::class, 'title')->get('fo'));
+        $this->assertCount(0, Search::add(Video::class, 'title')->endWithWildcard(false)->get('fo'));
+    }
+
+    /** @test */
+    public function it_can_use_the_sounds_like_operator()
+    {
+        Video::create(['title' => 'laravel']);
+
+        $this->assertCount(0, Search::add(Video::class, 'title')->get('larafel'));
+        $this->assertCount(1, Search::add(Video::class, 'title')->soundsLike()->get('larafel'));
     }
 
     /** @test */

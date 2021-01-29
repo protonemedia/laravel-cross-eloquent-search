@@ -6,7 +6,7 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/protonemedia/laravel-cross-eloquent-search.svg?style=flat-square)](https://packagist.org/packages/protonemedia/laravel-cross-eloquent-search)
 [![Buy us a tree](https://img.shields.io/badge/Treeware-%F0%9F%8C%B3-lightgreen)](https://plant.treeware.earth/protonemedia/laravel-cross-eloquent-search)
 
-This Laravel package allows you to search through multiple Eloquent models. It supports sorting, pagination, scoped queries, eager load relationships and searching through single or multiple columns.
+This Laravel package allows you to search through multiple Eloquent models. It supports sorting, pagination, scoped queries, eager load relationships, and searching through single or multiple columns.
 
 ### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 
@@ -26,9 +26,9 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 * In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
 * Zero third-party dependencies
 
-## Blogpost
+## Blog post
 
-If you want to know more about the background of this package, please read [the blogpost](https://protone.media/blog/search-through-multiple-eloquent-models-with-our-latest-laravel-package).
+If you want to know more about this package's background, please read [the blog post](https://protone.media/blog/search-through-multiple-eloquent-models-with-our-latest-laravel-package).
 
 ## Support
 
@@ -42,9 +42,17 @@ You can install the package via composer:
 composer require protonemedia/laravel-cross-eloquent-search
 ```
 
+## Upgrading from v1
+
+* The `startWithWildcard` method has been renamed to `beginWithWildcard`.
+* The default order column is now evaluated by the `getUpdatedAtColumn` method. Previously it was hard-coded to `updated_at`. You still can use [another column](#sorting) to order by.
+* The `allowEmptySearchQuery` method and `EmptySearchQueryException` class have been removed, but you can still [get results without searching](#getting-results-without-searching).
+
 ## Usage
 
-Start your search query by adding one or more models to search through. Call the `add` method with the class name of the model and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results. By default, the results are sorted in ascending order by the `updated_at` column.
+Start your search query by adding one or more models to search through. Call the `add` method with the model's class name and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.
+
+The results are sorted in ascending order by the *updated* column by default. In most cases, this column is `updated_at`. If you've [customized](https://laravel.com/docs/master/eloquent#timestamps) your model's `UPDATED_AT` constant, or overwritten the `getUpdatedAtColumn` method, this package will use the customized column. Of course, you can [order by another column](#sorting) as well.
 
 ```php
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
@@ -81,25 +89,26 @@ Search::new()
     ->get('howto');
 ```
 
-### Sorting
+### Wildcards
 
-If you want to sort the results by another column, you can pass that column to the `add` method as a third parameter. Call the `orderByDesc` method to sort the results in descending order.
-
-```php
-Search::add(Post::class, 'title', 'publihed_at')
-    ->add(Video::class, 'title', 'released_at')
-    ->orderByDesc()
-    ->get('learn');
-```
-
-### Start search term with wildcard
-
-By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to start with as well, you can call the `startWithWildcard` method. This will result in `%apple%` and `%ios%`.
+By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to begin with as well, you can call the `beginWithWildcard` method. This will result in `%apple%` and `%ios%`.
 
 ```php
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->startWithWildcard()
+    ->beginWithWildcard()
+    ->get('os');
+```
+
+*Note: in previous versions of this package, this method was called `startWithWildcard()`.*
+
+If you want to disable the behaviour where a wildcard is appended to the terms, you should call the `endWithWildcard` method with `false`:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->beginWithWildcard()
+    ->endWithWildcard(false)
     ->get('os');
 ```
 
@@ -122,9 +131,20 @@ Search::add(Post::class, 'title')
     ->get('macos big sur');
 ```
 
+### Sorting
+
+If you want to sort the results by another column, you can pass that column to the `add` method as a third parameter. Call the `orderByDesc` method to sort the results in descending order.
+
+```php
+Search::add(Post::class, 'title', 'publihed_at')
+    ->add(Video::class, 'title', 'released_at')
+    ->orderByDesc()
+    ->get('learn');
+```
+
 ### Pagination
 
-We highly recommend to paginate your results. Call the `paginate` method before the `get` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
+We highly recommend paginating your results. Call the `paginate` method before the `get` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
 
 ```php
 Search::add(Post::class, 'title')
@@ -170,6 +190,17 @@ Search::add(Post::class, ['title', 'body'])
     ->get('eloquent');
 ```
 
+### Sounds like
+
+MySQL has a *soundex* algorithm built-in so you can search for terms that sound almost the same. You can use this feature by calling the `soundsLike` method:
+
+```php
+Search::new()
+    ->add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->soundsLike()
+    ->get('larafel');
+```
 
 ### Eager load relationships
 
@@ -183,23 +214,13 @@ Search::add(Post::with('comments'), 'title')
 
 ### Getting results without searching
 
-If you call the `get` method without a term or with an empty term, the package throws an `EmptySearchQueryException`. You can disable this behaviour with the `allowEmptySearchQuery` method.
-
-```php
-Search::add(Post::with('comments'), 'title', 'published_at')
-    ->add(Video::with('likes'), 'title', 'released_at')
-    ->allowEmptySearchQuery()
-    ->get();
-```
-
-In this case, you can discard the second argument as well. With the `orderBy` method, you can set the column to sort by (previously the third argument):
+You call the `get` method without a term or with an empty term. In this case, you can discard the second argument of the `add` method. With the `orderBy` method, you can set the column to sort by (previously the third argument):
 
 ```php
 Search::add(Post::class)
     ->orderBy('published_at')
     ->add(Video::class)
     ->orderBy('released_at')
-    ->allowEmptySearchQuery()
     ->get();
 ```
 
@@ -258,7 +279,7 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ### Security
 
-If you discover any security related issues, please email pascal@protone.media instead of using the issue tracker.
+If you discover any security-related issues, please email pascal@protone.media instead of using the issue tracker.
 
 ## Credits
 
@@ -271,4 +292,4 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 
 ## Treeware
 
-This package is [Treeware](https://treeware.earth). If you use it in production, then we ask that you [**buy the world a tree**](https://plant.treeware.earth/pascalbaljetmedia/laravel-cross-eloquent-search) to thank us for our work. By contributing to the Treeware forest you’ll be creating employment for local families and restoring wildlife habitats.
+This package is [Treeware](https://treeware.earth). If you use it in production, we ask that you [**buy the world a tree**](https://plant.treeware.earth/pascalbaljetmedia/laravel-cross-eloquent-search) to thank us for our work. By contributing to the Treeware forest, you'll create employment for local families and restoring wildlife habitats.
