@@ -38,6 +38,11 @@ class Searcher
     protected string $whereOperator = 'like';
 
     /**
+     * Use soundex to match the terms.
+     */
+    protected bool $soundsLike = false;
+
+    /**
      * Collection of search terms.
      */
     protected Collection $terms;
@@ -216,6 +221,8 @@ class Searcher
      */
     public function soundsLike(): self
     {
+        $this->soundsLike = true;
+
         $this->whereOperator = 'sounds like';
 
         return $this;
@@ -286,12 +293,14 @@ class Searcher
 
         $this->terms = Collection::wrap($terms)
             ->filter()
-            ->map(function ($term) {
-                return implode([
-                    $this->beginWithWildcard ? '%' : '',
-                    $term,
-                    $this->endWithWildcard ? '%' : '',
-                ]);
+            ->unless($this->soundsLike, function ($terms) {
+                return $terms->map(function ($term) {
+                    return implode([
+                        $this->beginWithWildcard ? '%' : '',
+                        $term,
+                        $this->endWithWildcard ? '%' : '',
+                    ]);
+                });
             });
 
         return $this;
