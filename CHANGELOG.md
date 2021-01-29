@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.0.0 - 2021-01-29
+
+- Support for the soundex algorithm
+- Ability to disable wildcards
+- Uses the `getUpdatedAtColumn` method to evaluate the *updated* column
+- `startWithWildcard` method has been renamed to `beginWithWildcard`
+- `allowEmptySearchQuery` method and `EmptySearchQueryException` class removed
+
 ## 1.9.0 - 2020-12-23
 
 - Support for `addMany` and `andWhen` methods.
