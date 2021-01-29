@@ -219,11 +219,11 @@ class Searcher
      *
      * @return self
      */
-    public function soundsLike(): self
+    public function soundsLike($state = true): self
     {
-        $this->soundsLike = true;
+        $this->soundsLike = $state;
 
-        $this->whereOperator = 'sounds like';
+        $this->whereOperator = $state ? 'sounds like' : 'like';
 
         return $this;
     }
