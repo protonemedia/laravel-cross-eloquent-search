@@ -2,7 +2,11 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
-## 2.0.0 - 2021-01-29
+## 2.0.3 - 2021-04-29
+
+- Bugfix for non-paginated queries.
+
+## 2.0.0 / 2.0.1 / 2.0.2 - 2021-01-29
 
 - Support for the soundex algorithm
 - Ability to disable wildcards

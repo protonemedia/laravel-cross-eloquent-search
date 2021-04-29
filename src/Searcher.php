@@ -55,7 +55,7 @@ class Searcher
     /**
      * The query string variable used to store the page.
      */
-    protected string $pageName = 'page';
+    protected string $pageName = '';
 
     /**
      * Parse the search term into multiple terms.
@@ -410,7 +410,7 @@ class Searcher
         $paginateMethod = $this->simplePaginate ? 'simplePaginate' : 'paginate';
 
         // get all results or limit the results by pagination
-        return $this->perPage
+        return $this->pageName
             ? $query->{$paginateMethod}($this->perPage, ['*'], $this->pageName, $this->page)
             : $query->get();
 
@@ -509,6 +509,6 @@ class Searcher
             return $modelsPerType->get($modelKey)->get($item->$modelKey);
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
-            ->when($this->perPage, fn (EloquentCollection $models) => $results->setCollection($models));
+            ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
     }
 }

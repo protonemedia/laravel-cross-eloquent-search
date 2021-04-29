@@ -5,6 +5,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 class SearchTest extends TestCase
@@ -26,6 +27,7 @@ class SearchTest extends TestCase
             ->add(Video::class, 'title')
             ->get('foo');
 
+        $this->assertInstanceOf(Collection::class, $results);
         $this->assertCount(2, $results);
 
         $this->assertTrue($results->contains($postA));
