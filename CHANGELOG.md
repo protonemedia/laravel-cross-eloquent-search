@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.0.4 - 2021-05-03
+
+- Fix phpdoc comment format (credit to @gazben)
+
 ## 2.0.3 - 2021-04-29
 
 - Bugfix for non-paginated queries.
