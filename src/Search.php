@@ -4,7 +4,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Support\Facades\Facade;
 
-/*
+/**
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher new()
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher orderByAsc()
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher orderByDesc()
