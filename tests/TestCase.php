@@ -3,6 +3,7 @@
 namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 use PDO;
 use ProtoneMedia\LaravelCrossEloquentSearch\ServiceProvider;
@@ -22,6 +23,13 @@ class TestCase extends OrchestraTestCase
 
         $this->app['config']->set('app.key', 'base64:yWa/ByhLC/GUvfToOuaPD7zDwB64qkc/QkaQOrT5IpE=');
 
+        $this->initDatabase();
+    }
+
+    protected function initDatabase($prefix = '')
+    {
+        DB::purge('mysql');
+
         $this->app['config']->set('database.connections.mysql', [
             'driver'         => 'mysql',
             'url'            => env('DATABASE_URL'),
@@ -33,7 +41,7 @@ class TestCase extends OrchestraTestCase
             'unix_socket'    => env('DB_SOCKET', ''),
             'charset'        => 'utf8mb4',
             'collation'      => 'utf8mb4_unicode_ci',
-            'prefix'         => '',
+            'prefix'         => $prefix,
             'prefix_indexes' => true,
             'strict'         => true,
             'engine'         => null,

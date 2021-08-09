@@ -82,7 +82,7 @@ class ModelToSearchThrough
      *
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function getModel(): Model
+    public function getModel(): Model
     {
         return $this->builder->getModel();
     }

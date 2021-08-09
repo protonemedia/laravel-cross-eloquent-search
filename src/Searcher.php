@@ -337,8 +337,10 @@ class Searcher
             $qualifiedKeyName = $qualifiedOrderByColumnName = 'null';
 
             if ($modelToSearchThrough === $currentModel) {
-                $qualifiedKeyName = $modelToSearchThrough->getQualifiedKeyName();
-                $qualifiedOrderByColumnName = $modelToSearchThrough->getQualifiedOrderByColumnName();
+                $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
+
+                $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
+                $qualifiedOrderByColumnName = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
             }
 
             return [

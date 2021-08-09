@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.1.0 - 2021-08-09
+
+- Support for Table prefixes
+
 ## 2.0.4 - 2021-05-03
 
 - Fix phpdoc comment format (credit to @gazben)
