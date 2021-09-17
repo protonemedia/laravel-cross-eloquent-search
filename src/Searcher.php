@@ -48,6 +48,11 @@ class Searcher
     protected Collection $terms;
 
     /**
+     * Collection of search terms.
+     */
+    protected Collection $termsWithoutWildcards;
+
+    /**
      * The number of items to be shown per page.
      */
     protected int $perPage = 15;
@@ -104,6 +109,18 @@ class Searcher
     public function orderByDesc(): self
     {
         $this->orderByDirection = 'desc';
+
+        return $this;
+    }
+
+    /**
+     * Sort the results in relevance order.
+     *
+     * @return self
+     */
+    public function orderByRelevance(): self
+    {
+        $this->orderByDirection = 'relevance';
 
         return $this;
     }
@@ -291,17 +308,17 @@ class Searcher
     {
         $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
 
-        $this->terms = Collection::wrap($terms)
-            ->filter()
-            ->unless($this->soundsLike, function ($terms) {
-                return $terms->map(function ($term) {
-                    return implode([
-                        $this->beginWithWildcard ? '%' : '',
-                        $term,
-                        $this->endWithWildcard ? '%' : '',
-                    ]);
-                });
+        $this->termsWithoutWildcards = Collection::wrap($terms)->filter();
+
+        $this->terms = Collection::make($this->termsWithoutWildcards)->unless($this->soundsLike, function ($terms) {
+            return $terms->map(function ($term) {
+                return implode([
+                    $this->beginWithWildcard ? '%' : '',
+                    $term,
+                    $this->endWithWildcard ? '%' : '',
+                ]);
             });
+        });
 
         return $this;
     }
@@ -322,6 +339,34 @@ class Searcher
                 fn ($field) => $this->terms->each(fn ($term) => $query->orWhere($field, $this->whereOperator, $term))
             );
         });
+    }
+
+    /**
+     * Adds a word count so we can order by relevance.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $modelToSearchThrough
+     * @return void
+     */
+    private function addRelevanceQueryToBuilder($builder, $modelToSearchThrough)
+    {
+        if ($this->orderByDirection !== 'relevance') {
+            return;
+        }
+
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($builder) {
+            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+                return [
+                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
+                    'bindings'   => [strtolower($term), substr(strtolower($term), 1)],
+                ];
+            });
+        });
+
+        $selects  = $expressionsAndBindings->map->expression->implode(' + ');
+        $bindings = $expressionsAndBindings->flatMap->bindings->all();
+
+        $builder->selectRaw("{$selects} as terms_count", $bindings);
     }
 
     /**
@@ -375,6 +420,7 @@ class Searcher
                 ->select($this->makeSelects($modelToSearchThrough))
                 ->tap(function ($builder) use ($modelToSearchThrough) {
                     $this->addSearchQueryToBuilder($builder, $modelToSearchThrough);
+                    $this->addRelevanceQueryToBuilder($builder, $modelToSearchThrough);
                 });
         });
     }
@@ -394,6 +440,10 @@ class Searcher
 
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
+
+        if ($this->orderByDirection === 'relevance') {
+            return $firstQuery->orderBy('terms_count', 'desc');
+        }
 
         // sort by the given columns and direction
         return $firstQuery->orderBy(DB::raw($this->makeOrderBy()), $this->orderByDirection);

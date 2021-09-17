@@ -21,6 +21,7 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 * Search through one or more [Eloquent models](https://laravel.com/docs/master/eloquent).
 * Support for cross-model [pagination](https://laravel.com/docs/master/pagination#introduction).
 * Search through single or multiple columns.
+* Order by (cross-model) columns or by relevance.
 * Use [constraints](https://laravel.com/docs/master/eloquent#retrieving-models) and [scoped queries](https://laravel.com/docs/master/eloquent#query-scopes).
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
 * In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
@@ -136,10 +137,24 @@ Search::add(Post::class, 'title')
 If you want to sort the results by another column, you can pass that column to the `add` method as a third parameter. Call the `orderByDesc` method to sort the results in descending order.
 
 ```php
-Search::add(Post::class, 'title', 'publihed_at')
+Search::add(Post::class, 'title', 'published_at')
     ->add(Video::class, 'title', 'released_at')
     ->orderByDesc()
     ->get('learn');
+```
+
+You can call the `orderByRelevance` method to sort the results by the number of occurrences of the search terms. Imagine these two sentences:
+
+* Apple introduces iPhone 13 and iPhone 13 mini
+* Apple unveils new iPad mini with breakthrough performance in stunning new design
+
+If you search for *Apple iPad*, the second sentence will come up first, as there are more matches of the search terms.
+
+```php
+Search::add(Post::class, 'title')
+    ->beginWithWildcard()
+    ->orderByRelevance()
+    ->get('Apple iPad');
 ```
 
 ### Pagination
