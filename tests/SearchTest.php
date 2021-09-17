@@ -309,6 +309,22 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_sort_by_word_occurrence()
+    {
+        $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
+        $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
+
+        $results = Search::new()
+            ->add(Video::class, ['title', 'subtitle'])
+            ->beginWithWildcard()
+            ->orderByRelevance()
+            ->get('Apple iPad');
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results->first()->is($videoB));
+    }
+
+    /** @test */
     public function it_uses_length_aware_paginator_by_default()
     {
         $search = Search::add(Post::class, 'title', 'published_at')
