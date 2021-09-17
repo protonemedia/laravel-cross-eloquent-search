@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.2.1 - 2021-09-17
+
+- Bugfix for JSON columns
+
 ## 2.2.0 - 2021-09-17
 
 - Support for ordering by relevance
