@@ -8,7 +8,9 @@
 
 This Laravel package allows you to search through multiple Eloquent models. It supports sorting, pagination, scoped queries, eager load relationships, and searching through single or multiple columns.
 
-### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
+## Launcher 🚀
+
+Hey! We've built a Docker-based deployment tool to launch apps and sites fully containerized. You can find all features and the roadmap on our [website](https://uselauncher.com), and we are on [Twitter](https://twitter.com/uselauncher) as well!
 
 ## Requirements
 
@@ -26,6 +28,9 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
 * In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
 * Zero third-party dependencies
+
+
+### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 
 ## Blog post
 
