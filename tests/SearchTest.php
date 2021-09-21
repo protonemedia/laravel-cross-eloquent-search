@@ -325,6 +325,20 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_doesnt_fail_when_the_terms_are_empty()
+    {
+        Video::create(['title' => 'bar']);
+        Video::create(['title' => 'foo']);
+
+        $results = Search::new()
+            ->add(Video::class)
+            ->orderByRelevance()
+            ->get();
+
+        $this->assertCount(2, $results);
+    }
+
+    /** @test */
     public function it_uses_length_aware_paginator_by_default()
     {
         $search = Search::add(Post::class, 'title', 'published_at')

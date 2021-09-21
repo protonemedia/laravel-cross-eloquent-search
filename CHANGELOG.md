@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.2.2 - 2021-09-21
+
+- Bugfix for empty search terms
+
 ## 2.2.1 - 2021-09-17
 
 - Bugfix for JSON columns

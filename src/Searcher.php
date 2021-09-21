@@ -351,7 +351,7 @@ class Searcher
      */
     private function addRelevanceQueryToBuilder($builder, $modelToSearchThrough)
     {
-        if ($this->orderByDirection !== 'relevance') {
+        if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
             return;
         }
 
@@ -429,6 +429,16 @@ class Searcher
     }
 
     /**
+     * Returns a boolean wether the ordering is set to 'relevance'.
+     *
+     * @return boolean
+     */
+    private function isOrderingByRelevance(): bool
+    {
+        return $this->orderByDirection === 'relevance';
+    }
+
+    /**
       * Compiles all queries to one big one which binds everything together
       * using UNION statements.
       *
@@ -444,12 +454,15 @@ class Searcher
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
-        if ($this->orderByDirection === 'relevance') {
+        if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
             return $firstQuery->orderBy('terms_count', 'desc');
         }
 
         // sort by the given columns and direction
-        return $firstQuery->orderBy(DB::raw($this->makeOrderBy()), $this->orderByDirection);
+        return $firstQuery->orderBy(
+            DB::raw($this->makeOrderBy()),
+            $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+        );
     }
 
     /**
