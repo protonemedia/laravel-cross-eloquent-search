@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.2.3 - 2021-09-22
+
+- Support for ignore case
+
 ## 2.2.2 - 2021-09-21
 
 - Bugfix for empty search terms

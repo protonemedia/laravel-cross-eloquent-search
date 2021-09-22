@@ -124,6 +124,22 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_has_an_option_to_ignore_the_case()
+    {
+        $postA  = Post::create(['title' => 'foo']);
+        $postB  = Post::create(['title' => 'bar bar']);
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar']);
+
+        $results = Search::add(Post::class, 'title')
+            ->add(Video::class, 'title')
+            ->ignoreCase()
+            ->get('FOO');
+
+        $this->assertCount(2, $results);
+    }
+
+    /** @test */
     public function it_has_a_method_to_parse_the_terms()
     {
         $this->assertEquals(['foo'], Search::parseTerms('foo')->all());

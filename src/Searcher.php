@@ -44,6 +44,11 @@ class Searcher
     protected bool $soundsLike = false;
 
     /**
+     * Ignore case.
+     */
+    protected bool $ignoreCase = false;
+
+    /**
      * Collection of search terms.
      */
     protected Collection $terms;
@@ -207,6 +212,19 @@ class Searcher
     }
 
     /**
+     * Ignore case of terms.
+     *
+     * @param boolean $state
+     * @return self
+     */
+    public function ignoreCase(bool $state = true): self
+    {
+        $this->ignoreCase = $state;
+
+        return $this;
+    }
+
+    /**
      * Let's each search term begin with a wildcard.
      *
      * @param boolean $state
@@ -309,7 +327,9 @@ class Searcher
     {
         $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
 
-        $this->termsWithoutWildcards = Collection::wrap($terms)->filter();
+        $this->termsWithoutWildcards = Collection::wrap($terms)->filter()->map(function ($term) {
+            return $this->ignoreCase ? Str::lower($term) : $term;
+        });
 
         $this->terms = Collection::make($this->termsWithoutWildcards)->unless($this->soundsLike, function ($terms) {
             return $terms->map(function ($term) {
@@ -335,9 +355,13 @@ class Searcher
      */
     public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
     {
-        $builder->where(function ($query) use ($modelToSearchThrough) {
+        $builder->where(function (Builder $query) use ($modelToSearchThrough) {
             $modelToSearchThrough->getQualifiedColumns()->each(
-                fn ($field) => $this->terms->each(fn ($term) => $query->orWhere($field, $this->whereOperator, $term))
+                fn ($field) => $this->terms->each(function ($term) use ($query, $field) {
+                    $this->ignoreCase
+                        ? $query->orWhereRaw("LOWER({$field}) {$this->whereOperator} ?", [$term])
+                        : $query->orWhere($field, $this->whereOperator, $term);
+                })
             );
         });
     }
