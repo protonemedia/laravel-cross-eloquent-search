@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.2.4 - 2021-09-17
+
+- Bugfix for JSON columns
+
 ## 2.2.3 - 2021-09-22
 
 - Support for ignore case

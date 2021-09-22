@@ -358,6 +358,8 @@ class Searcher
         $builder->where(function (Builder $query) use ($modelToSearchThrough) {
             $modelToSearchThrough->getQualifiedColumns()->each(
                 fn ($field) => $this->terms->each(function ($term) use ($query, $field) {
+                    $field = $this->ignoreCase ? (new MySqlGrammar)->wrap($field) : $field;
+
                     $this->ignoreCase
                         ? $query->orWhereRaw("LOWER({$field}) {$this->whereOperator} ?", [$term])
                         : $query->orWhere($field, $this->whereOperator, $term);
