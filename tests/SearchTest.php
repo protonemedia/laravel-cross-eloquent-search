@@ -126,20 +126,14 @@ class SearchTest extends TestCase
     /** @test */
     public function it_has_an_option_to_ignore_the_case()
     {
-        $postA = Post::create(['title' => 'foo']);
-        $postB = Post::create(['title' => 'bar bar']);
+        Post::create(['title' => 'foo']);
+        Post::create(['title' => 'bar bar']);
 
-        $videoA = new Video;
-        $videoB = new Video;
-
-        $videoA->mergeCasts(['title' => 'json']);
-        $videoB->mergeCasts(['title' => 'json']);
-
-        $videoA->forceFill(['title' => ['nl' => 'bar foo']])->save();
-        $videoB->forceFill(['title' => ['nl' => 'bar']])->save();
+        VideoJson::create(['title' => ['nl' => 'bar foo']]);
+        VideoJson::create(['title' => ['nl' => 'bar']]);
 
         $results = Search::add(Post::class, 'title')
-            ->add(Video::class, 'title->nl')
+            ->add(VideoJson::class, 'title->nl')
             ->beginWithWildcard()
             ->ignoreCase()
             ->get('FOO');
