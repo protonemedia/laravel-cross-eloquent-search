@@ -398,8 +398,8 @@ class SearchTest extends TestCase
         $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
         $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
 
-        $postA = Video::create(['title' => 'Apple introduces iPhone 13 and iPhone 13 mini']);
-        $postB = Video::create(['title' => 'Apple unveils new iPad mini with breakthrough performance in stunning new design']);
+        $postA = Post::create(['title' => 'Apple introduces iPhone 13 and iPhone 13 mini']);
+        $postB = Post::create(['title' => 'Apple unveils new iPad mini with breakthrough performance in stunning new design']);
 
         $results = Search::new()
             ->add(Video::class, ['title', 'subtitle'])
