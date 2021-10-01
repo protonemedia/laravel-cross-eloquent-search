@@ -4,7 +4,7 @@ All notable changes to `laravel-cross-eloquent-search` will be documented in thi
 
 ## 2.3.0 - 2021-10-01
 
-- Support for 'orderByModel' method
+- Added 'orderByModel' method
 
 ## 2.2.5 - 2021-10-01
 

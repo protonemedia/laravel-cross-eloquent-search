@@ -370,8 +370,6 @@ class SearchTest extends TestCase
             ->get('foo');
 
         $this->assertInstanceOf(Comment::class, $results->get(0));
-        $this->assertInstanceOf(Post::class, $results->get(1));
-        $this->assertInstanceOf(Video::class, $results->get(2));
     }
 
     /** @test */
