@@ -406,7 +406,7 @@ class Searcher
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
                 return [
                     'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
-                    'bindings'   => [Str::lower($term), substr(Str::lower($term), 1)],
+                    'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
         });
