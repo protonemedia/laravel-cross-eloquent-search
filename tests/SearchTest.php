@@ -410,8 +410,8 @@ class SearchTest extends TestCase
             ->get('Apple iPad');
 
         $this->assertCount(4, $results);
-        $this->assertTrue($results->first()->is($videoB));
-        $this->assertTrue($results->last()->is($postA));
+        $this->assertTrue($results->first()->is($videoB), $results->toJson());
+        $this->assertTrue($results->last()->is($postA), $results->toJson());
     }
 
     /** @test */
