@@ -4,8 +4,11 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,19 +26,44 @@ class Searcher
     protected string $orderByDirection;
 
     /**
-     * Start the search term with a wildcard.
+     * Sort by model.
      */
-    protected bool $startWithWildcard = false;
+    protected ?array $orderByModel = null;
 
     /**
-     * Allow an empty search query.
+     * Begin the search term with a wildcard.
      */
-    protected bool $allowEmptySearchQuery = false;
+    protected bool $beginWithWildcard = false;
+
+    /**
+     * End the search term with a wildcard.
+     */
+    protected bool $endWithWildcard = true;
+
+    /**
+     * Where operator.
+     */
+    protected string $whereOperator = 'like';
+
+    /**
+     * Use soundex to match the terms.
+     */
+    protected bool $soundsLike = false;
+
+    /**
+     * Ignore case.
+     */
+    protected bool $ignoreCase = false;
 
     /**
      * Collection of search terms.
      */
     protected Collection $terms;
+
+    /**
+     * Collection of search terms.
+     */
+    protected Collection $termsWithoutWildcards;
 
     /**
      * The number of items to be shown per page.
@@ -45,7 +73,7 @@ class Searcher
     /**
      * The query string variable used to store the page.
      */
-    protected string $pageName = 'page';
+    protected string $pageName = '';
 
     /**
      * Parse the search term into multiple terms.
@@ -99,21 +127,35 @@ class Searcher
     }
 
     /**
-     * Disable the parsing of the search term.
+     * Sort the results in relevance order.
+     *
+     * @return self
      */
-    public function dontParseTerm(): self
+    public function orderByRelevance(): self
     {
-        $this->parseTerm = false;
+        $this->orderByDirection = 'relevance';
 
         return $this;
     }
 
     /**
-     * Allow empty search terms.
+     * Sort the results in order of the given models.
+     *
+     * @return self
      */
-    public function allowEmptySearchQuery(): self
+    public function orderByModel($modelClasses): self
     {
-        $this->allowEmptySearchQuery = true;
+        $this->orderByModel = Arr::wrap($modelClasses);
+
+        return $this;
+    }
+
+    /**
+     * Disable the parsing of the search term.
+     */
+    public function dontParseTerm(): self
+    {
+        $this->parseTerm = false;
 
         return $this;
     }
@@ -126,12 +168,14 @@ class Searcher
      * @param string $orderByColumn
      * @return self
      */
-    public function add($query, $columns = null, string $orderByColumn = 'updated_at'): self
+    public function add($query, $columns = null, string $orderByColumn = null): self
     {
+        $builder = is_string($query) ? $query::query() : $query;
+
         $modelToSearchThrough = new ModelToSearchThrough(
-            is_string($query) ? $query::query() : $query,
+            $builder,
             Collection::wrap($columns),
-            $orderByColumn,
+            $orderByColumn ?: $builder->getModel()->getUpdatedAtColumn(),
             $this->modelsToSearchThrough->count()
         );
 
@@ -149,7 +193,7 @@ class Searcher
      * @param string $orderByColumn
      * @return self
      */
-    public function addWhen($value, $query, $columns = null, string $orderByColumn = 'updated_at'): self
+    public function addWhen($value, $query, $columns = null, string $orderByColumn = null): self
     {
         if (!$value) {
             return $this;
@@ -187,13 +231,54 @@ class Searcher
     }
 
     /**
-     * Let's each search term start with a wildcard.
+     * Ignore case of terms.
+     *
+     * @param boolean $state
+     * @return self
+     */
+    public function ignoreCase(bool $state = true): self
+    {
+        $this->ignoreCase = $state;
+
+        return $this;
+    }
+
+    /**
+     * Let's each search term begin with a wildcard.
+     *
+     * @param boolean $state
+     * @return self
+     */
+    public function beginWithWildcard(bool $state = true): self
+    {
+        $this->beginWithWildcard = $state;
+
+        return $this;
+    }
+
+    /**
+     * Let's each search term end with a wildcard.
+     *
+     * @param boolean $state
+     * @return self
+     */
+    public function endWithWildcard(bool $state = true): self
+    {
+        $this->endWithWildcard = $state;
+
+        return $this;
+    }
+
+    /**
+     * Use 'sounds like' operator instead of 'like'.
      *
      * @return self
      */
-    public function startWithWildcard(): self
+    public function soundsLike(bool $state = true): self
     {
-        $this->startWithWildcard = true;
+        $this->soundsLike = $state;
+
+        $this->whereOperator = $state ? 'sounds like' : 'like';
 
         return $this;
     }
@@ -261,13 +346,19 @@ class Searcher
     {
         $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
 
-        $this->terms = Collection::wrap($terms)
-            ->filter()
-            ->map(fn ($term) => ($this->startWithWildcard ? '%' : '') . "{$term}%");
+        $this->termsWithoutWildcards = Collection::wrap($terms)->filter()->map(function ($term) {
+            return $this->ignoreCase ? Str::lower($term) : $term;
+        });
 
-        if (!$this->allowEmptySearchQuery && $this->terms->isEmpty()) {
-            throw new EmptySearchQueryException;
-        }
+        $this->terms = Collection::make($this->termsWithoutWildcards)->unless($this->soundsLike, function ($terms) {
+            return $terms->map(function ($term) {
+                return implode([
+                    $this->beginWithWildcard ? '%' : '',
+                    $term,
+                    $this->endWithWildcard ? '%' : '',
+                ]);
+            });
+        });
 
         return $this;
     }
@@ -283,11 +374,47 @@ class Searcher
      */
     public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
     {
-        $builder->where(function ($query) use ($modelToSearchThrough) {
+        $builder->where(function (Builder $query) use ($modelToSearchThrough) {
             $modelToSearchThrough->getQualifiedColumns()->each(
-                fn ($field) => $this->terms->each(fn ($term) => $query->orWhere($field, 'like', $term))
+                fn ($field) => $this->terms->each(function ($term) use ($query, $field) {
+                    $field = $this->ignoreCase ? (new MySqlGrammar)->wrap($field) : $field;
+
+                    $this->ignoreCase
+                        ? $query->orWhereRaw("LOWER({$field}) {$this->whereOperator} ?", [$term])
+                        : $query->orWhere($field, $this->whereOperator, $term);
+                })
             );
         });
+    }
+
+    /**
+     * Adds a word count so we can order by relevance.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $modelToSearchThrough
+     * @return void
+     */
+    private function addRelevanceQueryToBuilder($builder, $modelToSearchThrough)
+    {
+        if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
+            return;
+        }
+
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) {
+            $field = (new MySqlGrammar)->wrap($field);
+
+            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+                return [
+                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
+                    'bindings'   => [Str::lower($term), substr(Str::lower($term), 1)],
+                ];
+            });
+        });
+
+        $selects  = $expressionsAndBindings->map->expression->implode(' + ');
+        $bindings = $expressionsAndBindings->flatMap->bindings->all();
+
+        $builder->selectRaw("{$selects} as terms_count", $bindings);
     }
 
     /**
@@ -300,17 +427,31 @@ class Searcher
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
-            $qualifiedKeyName = $qualifiedOrderByColumnName = 'null';
+            $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
 
             if ($modelToSearchThrough === $currentModel) {
-                $qualifiedKeyName = $modelToSearchThrough->getQualifiedKeyName();
-                $qualifiedOrderByColumnName = $modelToSearchThrough->getQualifiedOrderByColumnName();
+                $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
+
+                $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
+                $qualifiedOrderByColumnName = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
+
+                if ($this->orderByModel) {
+                    $modelOrderKey = array_search(
+                        get_class($modelToSearchThrough->getModel()),
+                        $this->orderByModel ?: []
+                    );
+
+                    if ($modelOrderKey === false) {
+                        $modelOrderKey = count($this->orderByModel);
+                    }
+                }
             }
 
-            return [
+            return array_filter([
                 DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
                 DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
-            ];
+                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
+            ]);
         })->all();
     }
 
@@ -328,6 +469,19 @@ class Searcher
     }
 
     /**
+     * Implodes the qualified orderByModel keys with a comma and
+     * wraps them in a COALESCE method.
+     *
+     * @return string
+     */
+    protected function makeOrderByModel(): string
+    {
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
+
+        return "COALESCE({$modelOrderKeys})";
+    }
+
+    /**
      * Builds the search queries for each given pending model.
      *
      * @return \Illuminate\Support\Collection
@@ -339,8 +493,19 @@ class Searcher
                 ->select($this->makeSelects($modelToSearchThrough))
                 ->tap(function ($builder) use ($modelToSearchThrough) {
                     $this->addSearchQueryToBuilder($builder, $modelToSearchThrough);
+                    $this->addRelevanceQueryToBuilder($builder, $modelToSearchThrough);
                 });
         });
+    }
+
+    /**
+     * Returns a boolean wether the ordering is set to 'relevance'.
+     *
+     * @return boolean
+     */
+    private function isOrderingByRelevance(): bool
+    {
+        return $this->orderByDirection === 'relevance';
     }
 
     /**
@@ -354,13 +519,29 @@ class Searcher
         $queries = $this->buildQueries();
 
         // take the first query
+
+        /** @var BaseBuilder $firstQuery */
         $firstQuery = $queries->shift()->toBase();
 
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
+        if ($this->orderByModel) {
+            $firstQuery->orderBy(
+                DB::raw($this->makeOrderByModel()),
+                $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+            );
+        }
+
+        if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
+            return $firstQuery->orderBy('terms_count', 'desc');
+        }
+
         // sort by the given columns and direction
-        return $firstQuery->orderBy(DB::raw($this->makeOrderBy()), $this->orderByDirection);
+        return $firstQuery->orderBy(
+            DB::raw($this->makeOrderBy()),
+            $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+        );
     }
 
     /**
@@ -376,7 +557,7 @@ class Searcher
         $paginateMethod = $this->simplePaginate ? 'simplePaginate' : 'paginate';
 
         // get all results or limit the results by pagination
-        return $this->perPage
+        return $this->pageName
             ? $query->{$paginateMethod}($this->perPage, ['*'], $this->pageName, $this->page)
             : $query->get();
 
@@ -475,6 +656,6 @@ class Searcher
             return $modelsPerType->get($modelKey)->get($item->$modelKey);
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
-            ->when($this->perPage, fn (EloquentCollection $models) => $results->setCollection($models));
+            ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
     }
 }

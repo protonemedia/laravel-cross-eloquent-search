@@ -5,7 +5,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch\Tests;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
-use ProtoneMedia\LaravelCrossEloquentSearch\EmptySearchQueryException;
+use Illuminate\Support\Collection;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 class SearchTest extends TestCase
@@ -27,6 +27,7 @@ class SearchTest extends TestCase
             ->add(Video::class, 'title')
             ->get('foo');
 
+        $this->assertInstanceOf(Collection::class, $results);
         $this->assertCount(2, $results);
 
         $this->assertTrue($results->contains($postA));
@@ -58,6 +59,23 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_count_the_results()
     {
+        $postA  = Post::create(['title' => 'foo']);
+        $postB  = Post::create(['title' => 'bar']);
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
+
+        $count = Search::add(Post::class, 'title')
+            ->add(Video::class, ['title', 'subtitle'])
+            ->count('foo');
+
+        $this->assertEquals(3, $count);
+    }
+
+    /** @test */
+    public function it_respects_table_prefixes()
+    {
+        $this->initDatabase('prefix');
+
         $postA  = Post::create(['title' => 'foo']);
         $postB  = Post::create(['title' => 'bar']);
         $videoA = Video::create(['title' => 'foo']);
@@ -106,6 +124,24 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_has_an_option_to_ignore_the_case()
+    {
+        Post::create(['title' => 'foo']);
+        Post::create(['title' => 'bar bar']);
+
+        VideoJson::create(['title' => ['nl' => 'bar foo']]);
+        VideoJson::create(['title' => ['nl' => 'bar']]);
+
+        $results = Search::add(Post::class, 'title')
+            ->add(VideoJson::class, 'title->nl')
+            ->beginWithWildcard()
+            ->ignoreCase()
+            ->get('FOO');
+
+        $this->assertCount(2, $results);
+    }
+
+    /** @test */
     public function it_has_a_method_to_parse_the_terms()
     {
         $this->assertEquals(['foo'], Search::parseTerms('foo')->all());
@@ -124,18 +160,6 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_throws_an_exception_when_the_query_is_empty()
-    {
-        try {
-            Search::get('');
-        } catch (EmptySearchQueryException $exception) {
-            return $this->assertTrue(true);
-        }
-
-        $this->fail('Should have thrown EmptySearchQueryException.');
-    }
-
-    /** @test */
     public function it_can_search_without_a_term()
     {
         Post::create(['title' => 'foo']);
@@ -146,7 +170,6 @@ class SearchTest extends TestCase
         $results = Search::new()
             ->add(Post::class)->orderBy('updated_at')
             ->add(Video::class)->orderBy('published_at')
-            ->allowEmptySearchQuery()
             ->get();
 
         $this->assertCount(4, $results);
@@ -191,8 +214,17 @@ class SearchTest extends TestCase
     {
         Video::create(['title' => 'foo']);
 
-        $this->assertCount(0, Search::add(Video::class, 'title')->get('oo'));
-        $this->assertCount(1, Search::add(Video::class, 'title')->startWithWildcard()->get('oo'));
+        $this->assertCount(1, Search::add(Video::class, 'title')->get('fo'));
+        $this->assertCount(0, Search::add(Video::class, 'title')->endWithWildcard(false)->get('fo'));
+    }
+
+    /** @test */
+    public function it_can_use_the_sounds_like_operator()
+    {
+        Video::create(['title' => 'laravel']);
+
+        $this->assertCount(0, Search::add(Video::class, 'title')->get('larafel'));
+        $this->assertCount(1, Search::add(Video::class, 'title')->soundsLike()->get('larafel'));
     }
 
     /** @test */
@@ -292,6 +324,124 @@ class SearchTest extends TestCase
         $this->assertCount(1, $results);
         $this->assertEquals(10, $results->first()->comments_count);
         $this->assertTrue($results->first()->relationLoaded('comments'));
+    }
+
+    /** @test */
+    public function it_can_sort_by_model_order()
+    {
+        $post    = Post::create(['title' => 'foo']);
+        $comment = $post->comments()->create(['body' => 'foo']);
+        $video   = Video::create(['title' => 'foo']);
+
+        $results = Search::new()
+            ->add(Post::class, ['title'])
+            ->add(Video::class, ['title'])
+            ->add(Comment::class, ['body'])
+            ->orderByModel([
+                Comment::class, Post::class, Video::class,
+            ])
+            ->get('foo');
+
+        $this->assertInstanceOf(Comment::class, $results->get(0));
+        $this->assertInstanceOf(Post::class, $results->get(1));
+        $this->assertInstanceOf(Video::class, $results->get(2));
+
+        // desc:
+        $results = Search::new()
+            ->add(Post::class, ['title'])
+            ->add(Video::class, ['title'])
+            ->add(Comment::class, ['body'])
+            ->orderByModel([
+                Post::class, Video::class, Comment::class,
+            ])
+            ->orderByDesc()
+            ->get('foo');
+
+        $this->assertInstanceOf(Comment::class, $results->get(0));
+        $this->assertInstanceOf(Video::class, $results->get(1));
+        $this->assertInstanceOf(Post::class, $results->get(2));
+
+        // missing model:
+        $results = Search::new()
+            ->add(Post::class, ['title'])
+            ->add(Video::class, ['title'])
+            ->add(Comment::class, ['body'])
+            ->orderByModel(Comment::class)
+            ->get('foo');
+
+        $this->assertInstanceOf(Comment::class, $results->get(0));
+    }
+
+    /** @test */
+    public function it_respects_the_regular_order_when_ordering_by_model_type()
+    {
+        $postA  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(4)]);
+        $postB  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+        $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+
+        $results = Search::new()
+            ->add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByModel([Video::class, Post::class])
+            ->get('foo');
+
+        $this->assertCount(4, $results);
+
+        $this->assertTrue($results->first()->is($videoB));
+        $this->assertTrue($results->last()->is($postA));
+    }
+
+    /** @test */
+    public function it_respects_the_relevance_order_when_ordering_by_model_type()
+    {
+        $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
+        $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
+
+        $postA = Post::create(['title' => 'Apple introduces iPhone 13 and iPhone 13 mini']);
+        $postB = Post::create(['title' => 'Apple unveils new iPad mini with breakthrough performance in stunning new design']);
+
+        $results = Search::new()
+            ->add(Video::class, ['title', 'subtitle'])
+            ->add(Post::class, ['title'])
+            ->beginWithWildcard()
+            ->orderByRelevance()
+            ->orderByModel([Video::class, Post::class])
+            ->get('Apple iPad');
+
+        $this->assertCount(4, $results);
+        $this->assertTrue($results->first()->is($videoB), $results->toJson());
+        $this->assertTrue($results->last()->is($postA), $results->toJson());
+    }
+
+    /** @test */
+    public function it_can_sort_by_word_occurrence()
+    {
+        $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
+        $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
+
+        $results = Search::new()
+            ->add(Video::class, ['title', 'subtitle'])
+            ->beginWithWildcard()
+            ->orderByRelevance()
+            ->get('Apple iPad');
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results->first()->is($videoB));
+    }
+
+    /** @test */
+    public function it_doesnt_fail_when_the_terms_are_empty()
+    {
+        Video::create(['title' => 'bar']);
+        Video::create(['title' => 'foo']);
+
+        $results = Search::new()
+            ->add(Video::class)
+            ->orderByRelevance()
+            ->get();
+
+        $this->assertCount(2, $results);
     }
 
     /** @test */
