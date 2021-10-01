@@ -162,6 +162,19 @@ Search::add(Post::class, 'title')
     ->get('Apple iPad');
 ```
 
+To the sort the results by model type, you can use the `orderByModel` method by giving it your preferred order of the models:
+
+```php
+Search::new()
+    ->add(Comment::class, ['body'])
+    ->add(Post::class, ['title'])
+    ->add(Video::class, ['title', 'description'])
+    ->orderByModel([
+        Post::class, Video::class, Comment::class,
+    ])
+    ->get('Artisan School');
+```
+
 ### Pagination
 
 We highly recommend paginating your results. Call the `paginate` method before the `get` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.

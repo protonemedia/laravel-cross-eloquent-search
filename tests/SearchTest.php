@@ -327,6 +327,54 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_sort_by_model_order()
+    {
+        $post    = Post::create(['title' => 'foo']);
+        $comment = $post->comments()->create(['body' => 'foo']);
+        $video   = Video::create(['title' => 'foo']);
+
+        $results = Search::new()
+            ->add(Post::class, ['title'])
+            ->add(Video::class, ['title'])
+            ->add(Comment::class, ['body'])
+            ->orderByModel([
+                Comment::class, Post::class, Video::class,
+            ])
+            ->get('foo');
+
+        $this->assertInstanceOf(Comment::class, $results->get(0));
+        $this->assertInstanceOf(Post::class, $results->get(1));
+        $this->assertInstanceOf(Video::class, $results->get(2));
+
+        // desc:
+        $results = Search::new()
+            ->add(Post::class, ['title'])
+            ->add(Video::class, ['title'])
+            ->add(Comment::class, ['body'])
+            ->orderByModel([
+                Post::class, Video::class, Comment::class,
+            ])
+            ->orderByDesc()
+            ->get('foo');
+
+        $this->assertInstanceOf(Comment::class, $results->get(0));
+        $this->assertInstanceOf(Video::class, $results->get(1));
+        $this->assertInstanceOf(Post::class, $results->get(2));
+
+        // missing model:
+        $results = Search::new()
+            ->add(Post::class, ['title'])
+            ->add(Video::class, ['title'])
+            ->add(Comment::class, ['body'])
+            ->orderByModel(Comment::class)
+            ->get('foo');
+
+        $this->assertInstanceOf(Comment::class, $results->get(0));
+        $this->assertInstanceOf(Post::class, $results->get(1));
+        $this->assertInstanceOf(Video::class, $results->get(2));
+    }
+
+    /** @test */
     public function it_can_sort_by_word_occurrence()
     {
         $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);

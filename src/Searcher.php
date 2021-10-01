@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,6 +23,11 @@ class Searcher
      * Sort direction.
      */
     protected string $orderByDirection;
+
+    /**
+     * Sort by model.
+     */
+    protected ?array $orderByModel = null;
 
     /**
      * Begin the search term with a wildcard.
@@ -127,6 +133,18 @@ class Searcher
     public function orderByRelevance(): self
     {
         $this->orderByDirection = 'relevance';
+
+        return $this;
+    }
+
+    /**
+     * Sort the results in order of the given models.
+     *
+     * @return self
+     */
+    public function orderByModel($modelClasses): self
+    {
+        $this->orderByModel = Arr::wrap($modelClasses);
 
         return $this;
     }
@@ -408,19 +426,31 @@ class Searcher
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
-            $qualifiedKeyName = $qualifiedOrderByColumnName = 'null';
+            $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
 
             if ($modelToSearchThrough === $currentModel) {
                 $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
 
                 $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
                 $qualifiedOrderByColumnName = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
+
+                if ($this->orderByModel) {
+                    $modelOrderKey = array_search(
+                        get_class($modelToSearchThrough->getModel()),
+                        $this->orderByModel ?: []
+                    );
+
+                    if ($modelOrderKey === false) {
+                        $modelOrderKey = count($this->orderByModel);
+                    }
+                }
             }
 
-            return [
+            return array_filter([
                 DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
                 DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
-            ];
+                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
+            ]);
         })->all();
     }
 
@@ -432,7 +462,9 @@ class Searcher
      */
     protected function makeOrderBy(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
+        $modelKey = $this->orderByModel ? 'model_order' : 'order';
+
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey($modelKey)->implode(',');
 
         return "COALESCE({$modelOrderKeys})";
     }
