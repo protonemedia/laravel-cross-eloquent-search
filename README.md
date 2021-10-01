@@ -162,7 +162,7 @@ Search::add(Post::class, 'title')
     ->get('Apple iPad');
 ```
 
-To the sort the results by model type, you can use the `orderByModel` method by giving it your preferred order of the models:
+To sort the results by model type, you can use the `orderByModel` method by giving it your preferred order of the models:
 
 ```php
 Search::new()
