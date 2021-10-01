@@ -4,6 +4,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Pagination\Paginator;
@@ -462,9 +463,20 @@ class Searcher
      */
     protected function makeOrderBy(): string
     {
-        $modelKey = $this->orderByModel ? 'model_order' : 'order';
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
 
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey($modelKey)->implode(',');
+        return "COALESCE({$modelOrderKeys})";
+    }
+
+    /**
+     * Implodes the qualified orderByModel keys with a comma and
+     * wraps them in a COALESCE method.
+     *
+     * @return string
+     */
+    protected function makeOrderByModel(): string
+    {
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
 
         return "COALESCE({$modelOrderKeys})";
     }
@@ -507,10 +519,19 @@ class Searcher
         $queries = $this->buildQueries();
 
         // take the first query
+
+        /** @var BaseBuilder $firstQuery */
         $firstQuery = $queries->shift()->toBase();
 
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
+
+        if ($this->orderByModel) {
+            $firstQuery->orderBy(
+                DB::raw($this->makeOrderByModel()),
+                $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+            );
+        }
 
         if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
             return $firstQuery->orderBy('terms_count', 'desc');

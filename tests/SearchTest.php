@@ -373,6 +373,48 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_respects_the_regular_order_when_ordering_by_model_type()
+    {
+        $postA  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(4)]);
+        $postB  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+        $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+
+        $results = Search::new()
+            ->add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByModel([Video::class, Post::class])
+            ->get('foo');
+
+        $this->assertCount(4, $results);
+
+        $this->assertTrue($results->first()->is($videoB));
+        $this->assertTrue($results->last()->is($postA));
+    }
+
+    /** @test */
+    public function it_respects_the_relevance_order_when_ordering_by_model_type()
+    {
+        $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
+        $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
+
+        $postA = Video::create(['title' => 'Apple introduces iPhone 13 and iPhone 13 mini']);
+        $postB = Video::create(['title' => 'Apple unveils new iPad mini with breakthrough performance in stunning new design']);
+
+        $results = Search::new()
+            ->add(Video::class, ['title', 'subtitle'])
+            ->add(Post::class, ['title'])
+            ->beginWithWildcard()
+            ->orderByRelevance()
+            ->orderByModel([Video::class, Post::class])
+            ->get('Apple iPad');
+
+        $this->assertCount(4, $results);
+        $this->assertTrue($results->first()->is($videoB));
+        $this->assertTrue($results->last()->is($postA));
+    }
+
+    /** @test */
     public function it_can_sort_by_word_occurrence()
     {
         $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
