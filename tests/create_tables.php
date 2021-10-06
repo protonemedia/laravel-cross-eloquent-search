@@ -15,6 +15,7 @@ class CreateTables extends Migration
     {
         Schema::create('posts', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->unsignedInteger('video_id')->nullable();
             $table->string('title');
             $table->date('published_at')->nullable();
             $table->timestamps();

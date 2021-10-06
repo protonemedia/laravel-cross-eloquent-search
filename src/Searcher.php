@@ -375,15 +375,51 @@ class Searcher
     public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
     {
         $builder->where(function (Builder $query) use ($modelToSearchThrough) {
-            $modelToSearchThrough->getQualifiedColumns()->each(
-                fn ($field) => $this->terms->each(function ($term) use ($query, $field) {
-                    $field = $this->ignoreCase ? (new MySqlGrammar)->wrap($field) : $field;
+            $modelToSearchThrough->getColumns()->each(function ($column) use ($query, $modelToSearchThrough) {
+                Str::contains($column, '.')
+                    ? $this->addNestedRelationToQuery($query, $column)
+                    : $this->addWhereTermsToQuery($query, $modelToSearchThrough->qualifyColumn($column));
+            });
+        });
+    }
 
-                    $this->ignoreCase
-                        ? $query->orWhereRaw("LOWER({$field}) {$this->whereOperator} ?", [$term])
-                        : $query->orWhere($field, $this->whereOperator, $term);
-                })
+    /**
+     * Adds an 'orWhereHas' clause to the query to search through the given nested relation.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $column
+     * @return void
+     */
+    private function addNestedRelationToQuery(Builder $query, string $nestedRelationAndColumn)
+    {
+        $segments = explode('.', $nestedRelationAndColumn);
+
+        $column = array_pop($segments);
+
+        $relation = implode('.', $segments);
+
+        $query->orWhereHas($relation, function ($relationQuery) use ($column) {
+            $relationQuery->where(
+                fn ($query) => $this->addWhereTermsToQuery($query, $query->qualifyColumn($column))
             );
+        });
+    }
+
+    /**
+     * Adds an 'orWhere' clause to search for each term in the given column.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @param string $column
+     * @return void
+     */
+    private function addWhereTermsToQuery(Builder $query, string $column)
+    {
+        $column = $this->ignoreCase ? (new MySqlGrammar)->wrap($column) : $column;
+
+        $this->terms->each(function ($term) use ($query, $column) {
+            $this->ignoreCase
+                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
+                : $query->orWhere($column, $this->whereOperator, $term);
         });
     }
 
