@@ -436,6 +436,10 @@ class Searcher
             return;
         }
 
+        if (Str::contains($modelToSearchThrough->getColumns()->implode(''), '.')) {
+            throw OrderByRelevanceException::new();
+        }
+
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) {
             $field = (new MySqlGrammar)->wrap($field);
 

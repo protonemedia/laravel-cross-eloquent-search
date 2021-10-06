@@ -23,12 +23,12 @@ Hey! We've built a Docker-based deployment tool to launch apps and sites fully c
 * Search through one or more [Eloquent models](https://laravel.com/docs/master/eloquent).
 * Support for cross-model [pagination](https://laravel.com/docs/master/pagination#introduction).
 * Search through single or multiple columns.
+* Search through (nested) relationships.
 * Order by (cross-model) columns or by relevance.
 * Use [constraints](https://laravel.com/docs/master/eloquent#retrieving-models) and [scoped queries](https://laravel.com/docs/master/eloquent#query-scopes).
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
 * In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
 * Zero third-party dependencies
-
 
 ### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 
@@ -162,6 +162,8 @@ Search::add(Post::class, 'title')
     ->get('Apple iPad');
 ```
 
+Ordering by relevance is *not* supported if you're searching through (nested) relationships.
+
 To sort the results by model type, you can use the `orderByModel` method by giving it your preferred order of the models:
 
 ```php
@@ -221,6 +223,16 @@ You can search through multiple columns by passing an array of columns as the se
 Search::add(Post::class, ['title', 'body'])
     ->add(Video::class, ['title', 'subtitle'])
     ->get('eloquent');
+```
+
+### Search through (nested) relationships
+
+You can search through (nested) relationships by using the *dot* notation:
+
+```php
+Search::add(Post::class, ['comments.body'])
+    ->add(Video::class, ['posts.user.biography'])
+    ->get('solution');
 ```
 
 ### Sounds like

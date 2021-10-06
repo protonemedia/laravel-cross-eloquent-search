@@ -6,6 +6,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 class SearchTest extends TestCase
@@ -462,6 +463,27 @@ class SearchTest extends TestCase
         $this->assertCount(4, $results);
         $this->assertTrue($results->first()->is($videoB), $results->toJson());
         $this->assertTrue($results->last()->is($postA), $results->toJson());
+    }
+
+    /** @test */
+    public function it_cant_order_by_relevance_when_searching_through_nested_relationships()
+    {
+        $video = Video::create(['title' => 'foo']);
+        $post  = $video->posts()->create(['title' => 'bar']);
+
+        $search = Search::new()
+            ->beginWithWildcard(false)
+            ->endWithWildcard(false)
+            ->add(Video::class, 'posts.title')
+            ->orderByRelevance();
+
+        try {
+            $search->get('bar');
+        } catch (OrderByRelevanceException $e) {
+            return $this->assertTrue(true);
+        }
+
+        $this->fail('Should have thrown OrderByRelevanceException');
     }
 
     /** @test */
