@@ -67,6 +67,16 @@ class ModelToSearchThrough
     }
 
     /**
+     * Get a collection with all columns or relations to search through.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getColumns(): Collection
+    {
+        return $this->columns;
+    }
+
+    /**
      * Get a collection with all qualified columns
      * to search through.
      *
@@ -108,7 +118,7 @@ class ModelToSearchThrough
      * @param string $column
      * @return string
      */
-    protected function qualifyColumn(string $column): string
+    public function qualifyColumn(string $column): string
     {
         return $this->getModel()->qualifyColumn($column);
     }

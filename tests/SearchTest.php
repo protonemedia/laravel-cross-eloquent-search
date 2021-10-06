@@ -6,6 +6,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 class SearchTest extends TestCase
@@ -327,6 +328,56 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_search_through_relations()
+    {
+        $videoA = Video::create(['title' => 'foo1']);
+        $videoB = Video::create(['title' => 'bar']);
+
+        $postAA = $videoA->posts()->create(['title' => 'foo2']);
+        $postAB = $videoA->posts()->create(['title' => 'bar']);
+        $postBA = $videoB->posts()->create(['title' => 'far']);
+        $postBB = $videoB->posts()->create(['title' => 'boo']);
+
+        $postAA->comments()->create(['body' => 'comment1']);
+        $postAB->comments()->create(['body' => 'comment2']);
+        $postBA->comments()->create(['body' => 'comment3']);
+        $postBB->comments()->create(['body' => 'comment4']);
+
+        $results = Search::new()
+            ->beginWithWildcard(false)
+            ->endWithWildcard(false)
+            ->add(Video::class, 'posts.comments.body')
+            ->get('comment4');
+
+        $this->assertCount(1, $results);
+        $this->assertTrue($results->first()->is($videoB));
+
+        $results = Search::new()
+            ->beginWithWildcard(false)
+            ->endWithWildcard(false)
+            ->add(Video::class, ['title', 'posts.comments.body'])
+            ->get('foo1 comment4');
+
+        $this->assertCount(2, $results);
+
+        $results = Search::new()
+            ->beginWithWildcard(false)
+            ->endWithWildcard(false)
+            ->add(Video::class, ['title', 'posts.comments.body'])
+            ->add(Post::class, ['title', 'comments.body'])
+            ->get('foo1 foo2 comment4');
+
+        $this->assertCount(4, $results);
+
+        $results = $results->map(fn ($model) => class_basename($model) . $model->getKey());
+
+        $this->assertTrue($results->contains('Video1'));    // because foo1
+        $this->assertTrue($results->contains('Video2'));    // because comment4
+        $this->assertTrue($results->contains('Post1'));     // because foo2
+        $this->assertTrue($results->contains('Post4'));     // because comment4
+    }
+
+    /** @test */
     public function it_can_sort_by_model_order()
     {
         $post    = Post::create(['title' => 'foo']);
@@ -412,6 +463,27 @@ class SearchTest extends TestCase
         $this->assertCount(4, $results);
         $this->assertTrue($results->first()->is($videoB), $results->toJson());
         $this->assertTrue($results->last()->is($postA), $results->toJson());
+    }
+
+    /** @test */
+    public function it_cant_order_by_relevance_when_searching_through_nested_relationships()
+    {
+        $video = Video::create(['title' => 'foo']);
+        $post  = $video->posts()->create(['title' => 'bar']);
+
+        $search = Search::new()
+            ->beginWithWildcard(false)
+            ->endWithWildcard(false)
+            ->add(Video::class, 'posts.title')
+            ->orderByRelevance();
+
+        try {
+            $search->get('bar');
+        } catch (OrderByRelevanceException $e) {
+            return $this->assertTrue(true);
+        }
+
+        $this->fail('Should have thrown OrderByRelevanceException');
     }
 
     /** @test */
