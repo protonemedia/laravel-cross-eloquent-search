@@ -65,7 +65,7 @@ use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 $results = Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->get('howto');
+    ->search('howto');
 ```
 
 If you care about indentation, you can optionally use the `new` method on the facade:
@@ -74,7 +74,7 @@ If you care about indentation, you can optionally use the `new` method on the fa
 Search::new()
     ->add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->get('howto');
+    ->search('howto');
 ```
 
 You can add multiple models at once by using the `addMany` method:
@@ -83,7 +83,7 @@ You can add multiple models at once by using the `addMany` method:
 Search::addMany([
     [Post::class, 'title'],
     [Video::class, 'title'],
-])->get('howto');
+])->search('howto');
 ```
 
 There's also an `addWhen` method, that adds the model when the first argument given to the method evaluates to `true`:
@@ -92,7 +92,7 @@ There's also an `addWhen` method, that adds the model when the first argument gi
 Search::new()
     ->addWhen($user, Post::class, 'title')
     ->addWhen($user->isAdmin(), Video::class, 'title')
-    ->get('howto');
+    ->search('howto');
 ```
 
 ### Wildcards
@@ -103,7 +103,7 @@ By default, we split up the search term, and each keyword will get a wildcard sy
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->beginWithWildcard()
-    ->get('os');
+    ->search('os');
 ```
 
 *Note: in previous versions of this package, this method was called `startWithWildcard()`.*
@@ -115,7 +115,7 @@ Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->beginWithWildcard()
     ->endWithWildcard(false)
-    ->get('os');
+    ->search('os');
 ```
 
 ### Multi-word search
@@ -125,7 +125,7 @@ Multi-word search is supported out of the box. Simply wrap your phrase into doub
 ```php
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->get('"macos big sur"');
+    ->search('"macos big sur"');
 ```
 
 You can disable the parsing of the search term by calling the `dontParseTerm` method, which gives you the same results as using double-quotes.
@@ -134,7 +134,7 @@ You can disable the parsing of the search term by calling the `dontParseTerm` me
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->dontParseTerm()
-    ->get('macos big sur');
+    ->search('macos big sur');
 ```
 
 ### Sorting
@@ -145,7 +145,7 @@ If you want to sort the results by another column, you can pass that column to t
 Search::add(Post::class, 'title', 'published_at')
     ->add(Video::class, 'title', 'released_at')
     ->orderByDesc()
-    ->get('learn');
+    ->search('learn');
 ```
 
 You can call the `orderByRelevance` method to sort the results by the number of occurrences of the search terms. Imagine these two sentences:
@@ -159,7 +159,7 @@ If you search for *Apple iPad*, the second sentence will come up first, as there
 Search::add(Post::class, 'title')
     ->beginWithWildcard()
     ->orderByRelevance()
-    ->get('Apple iPad');
+    ->search('Apple iPad');
 ```
 
 Ordering by relevance is *not* supported if you're searching through (nested) relationships.
@@ -174,7 +174,7 @@ Search::new()
     ->orderByModel([
         Post::class, Video::class, Comment::class,
     ])
-    ->get('Artisan School');
+    ->search('Artisan School');
 ```
 
 ### Pagination
@@ -189,7 +189,7 @@ Search::add(Post::class, 'title')
     // or
     ->paginate($perPage = 15, $pageName = 'page', $page = 1)
 
-    ->get('build');
+    ->search('build');
 ```
 
 You may also use [simple pagination](https://laravel.com/docs/master/pagination#simple-pagination). This will return an instance of `\Illuminate\Contracts\Pagination\Paginator`, which is not length aware:
@@ -202,7 +202,7 @@ Search::add(Post::class, 'title')
     // or
     ->simplePaginate($perPage = 15, $pageName = 'page', $page = 1)
 
-    ->get('build');
+    ->search('build');
 ```
 
 ### Constraints and scoped queries
@@ -212,7 +212,7 @@ Instead of the class name, you can also pass an instance of the [Eloquent query 
 ```php
 Search::add(Post::published(), 'title')
     ->add(Video::where('views', '>', 2500), 'title')
-    ->get('compile');
+    ->search('compile');
 ```
 
 ### Multiple columns per model
@@ -222,7 +222,7 @@ You can search through multiple columns by passing an array of columns as the se
 ```php
 Search::add(Post::class, ['title', 'body'])
     ->add(Video::class, ['title', 'subtitle'])
-    ->get('eloquent');
+    ->search('eloquent');
 ```
 
 ### Search through (nested) relationships
@@ -232,7 +232,7 @@ You can search through (nested) relationships by using the *dot* notation:
 ```php
 Search::add(Post::class, ['comments.body'])
     ->add(Video::class, ['posts.user.biography'])
-    ->get('solution');
+    ->search('solution');
 ```
 
 ### Sounds like
@@ -244,7 +244,7 @@ Search::new()
     ->add(Post::class, 'framework')
     ->add(Video::class, 'framework')
     ->soundsLike()
-    ->get('larafel');
+    ->search('larafel');
 ```
 
 ### Eager load relationships
@@ -254,7 +254,7 @@ Not much to explain here, but this is supported as well :)
 ```php
 Search::add(Post::with('comments'), 'title')
     ->add(Video::with('likes'), 'title')
-    ->get('guitar');
+    ->search('guitar');
 ```
 
 ### Getting results without searching
@@ -266,7 +266,7 @@ Search::add(Post::class)
     ->orderBy('published_at')
     ->add(Video::class)
     ->orderBy('released_at')
-    ->get();
+    ->search();
 ```
 
 ### Counting records

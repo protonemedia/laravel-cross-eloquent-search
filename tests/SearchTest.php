@@ -26,7 +26,7 @@ class SearchTest extends TestCase
 
         $results = Search::add(Post::class, 'title')
             ->add(Video::class, 'title')
-            ->get('foo');
+            ->search('foo');
 
         $this->assertInstanceOf(Collection::class, $results);
         $this->assertCount(2, $results);
@@ -50,7 +50,7 @@ class SearchTest extends TestCase
 
         $results = Search::add(Post::class, 'title')
             ->add(Video::class, ['title', 'subtitle'])
-            ->get('foo');
+            ->search('foo');
 
         $this->assertCount(3, $results);
 
@@ -99,7 +99,7 @@ class SearchTest extends TestCase
 
         $results = Search::add(Post::class, 'title')
             ->add(Video::class, 'title')
-            ->get('"bar bar"');
+            ->search('"bar bar"');
 
         $this->assertCount(1, $results);
 
@@ -117,7 +117,7 @@ class SearchTest extends TestCase
         $results = Search::add(Post::class, 'title')
             ->add(Video::class, 'title')
             ->dontParseTerm()
-            ->get('bar bar');
+            ->search('bar bar');
 
         $this->assertCount(1, $results);
 
@@ -137,7 +137,7 @@ class SearchTest extends TestCase
             ->add(VideoJson::class, 'title->nl')
             ->beginWithWildcard()
             ->ignoreCase()
-            ->get('FOO');
+            ->search('FOO');
 
         $this->assertCount(2, $results);
     }
@@ -171,7 +171,7 @@ class SearchTest extends TestCase
         $results = Search::new()
             ->add(Post::class)->orderBy('updated_at')
             ->add(Video::class)->orderBy('published_at')
-            ->get();
+            ->search();
 
         $this->assertCount(4, $results);
     }
@@ -187,7 +187,7 @@ class SearchTest extends TestCase
         $results = Search::new()
             ->addWhen(true, Post::class, 'title')
             ->addWhen(false, Video::class, 'title', 'published_at')
-            ->get('foo');
+            ->search('foo');
 
         $this->assertCount(1, $results);
         $this->assertTrue($results->first()->is($postA));
@@ -202,7 +202,7 @@ class SearchTest extends TestCase
         $results = Search::addMany([
             [Video::class, 'title'],
             [Video::class, 'subtitle', 'created_at'],
-        ])->get('foo');
+        ])->search('foo');
 
         $this->assertCount(2, $results);
 
@@ -215,8 +215,8 @@ class SearchTest extends TestCase
     {
         Video::create(['title' => 'foo']);
 
-        $this->assertCount(1, Search::add(Video::class, 'title')->get('fo'));
-        $this->assertCount(0, Search::add(Video::class, 'title')->endWithWildcard(false)->get('fo'));
+        $this->assertCount(1, Search::add(Video::class, 'title')->search('fo'));
+        $this->assertCount(0, Search::add(Video::class, 'title')->endWithWildcard(false)->search('fo'));
     }
 
     /** @test */
@@ -224,8 +224,8 @@ class SearchTest extends TestCase
     {
         Video::create(['title' => 'laravel']);
 
-        $this->assertCount(0, Search::add(Video::class, 'title')->get('larafel'));
-        $this->assertCount(1, Search::add(Video::class, 'title')->soundsLike()->get('larafel'));
+        $this->assertCount(0, Search::add(Video::class, 'title')->search('larafel'));
+        $this->assertCount(1, Search::add(Video::class, 'title')->soundsLike()->search('larafel'));
     }
 
     /** @test */
@@ -236,7 +236,7 @@ class SearchTest extends TestCase
 
         $results = Search::add(Video::class, 'title')
             ->add(Video::class, 'subtitle')
-            ->get('foo');
+            ->search('foo');
 
         $this->assertCount(2, $results);
 
@@ -255,7 +255,7 @@ class SearchTest extends TestCase
         $results = Search::add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc()
-            ->get('foo');
+            ->search('foo');
 
         $this->assertCount(2, $results);
 
@@ -273,7 +273,7 @@ class SearchTest extends TestCase
 
         $results = Search::add(Post::whereNotNull('published_at'), 'title')
             ->add(Video::whereNotNull('published_at'), 'title')
-            ->get('foo');
+            ->search('foo');
 
         $this->assertCount(1, $results);
 
@@ -292,8 +292,8 @@ class SearchTest extends TestCase
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $resultsPage1 = $search->paginate(2, 'page', 1)->get('foo');
-        $resultsPage2 = $search->paginate(2, 'page', 2)->get('foo');
+        $resultsPage1 = $search->paginate(2, 'page', 1)->search('foo');
+        $resultsPage2 = $search->paginate(2, 'page', 2)->search('foo');
 
         $this->assertInstanceOf(LengthAwarePaginator::class, $resultsPage1);
         $this->assertInstanceOf(LengthAwarePaginator::class, $resultsPage2);
@@ -320,7 +320,7 @@ class SearchTest extends TestCase
         }
 
         $results = Search::add(Post::with('comments')->withCount('comments'), 'title')
-            ->get('foo');
+            ->search('foo');
 
         $this->assertCount(1, $results);
         $this->assertEquals(10, $results->first()->comments_count);
@@ -347,7 +347,7 @@ class SearchTest extends TestCase
             ->beginWithWildcard(false)
             ->endWithWildcard(false)
             ->add(Video::class, 'posts.comments.body')
-            ->get('comment4');
+            ->search('comment4');
 
         $this->assertCount(1, $results);
         $this->assertTrue($results->first()->is($videoB));
@@ -356,7 +356,7 @@ class SearchTest extends TestCase
             ->beginWithWildcard(false)
             ->endWithWildcard(false)
             ->add(Video::class, ['title', 'posts.comments.body'])
-            ->get('foo1 comment4');
+            ->search('foo1 comment4');
 
         $this->assertCount(2, $results);
 
@@ -365,7 +365,7 @@ class SearchTest extends TestCase
             ->endWithWildcard(false)
             ->add(Video::class, ['title', 'posts.comments.body'])
             ->add(Post::class, ['title', 'comments.body'])
-            ->get('foo1 foo2 comment4');
+            ->search('foo1 foo2 comment4');
 
         $this->assertCount(4, $results);
 
@@ -391,7 +391,7 @@ class SearchTest extends TestCase
             ->orderByModel([
                 Comment::class, Post::class, Video::class,
             ])
-            ->get('foo');
+            ->search('foo');
 
         $this->assertInstanceOf(Comment::class, $results->get(0));
         $this->assertInstanceOf(Post::class, $results->get(1));
@@ -406,7 +406,7 @@ class SearchTest extends TestCase
                 Post::class, Video::class, Comment::class,
             ])
             ->orderByDesc()
-            ->get('foo');
+            ->search('foo');
 
         $this->assertInstanceOf(Comment::class, $results->get(0));
         $this->assertInstanceOf(Video::class, $results->get(1));
@@ -418,7 +418,7 @@ class SearchTest extends TestCase
             ->add(Video::class, ['title'])
             ->add(Comment::class, ['body'])
             ->orderByModel(Comment::class)
-            ->get('foo');
+            ->search('foo');
 
         $this->assertInstanceOf(Comment::class, $results->get(0));
     }
@@ -435,7 +435,7 @@ class SearchTest extends TestCase
             ->add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByModel([Video::class, Post::class])
-            ->get('foo');
+            ->search('foo');
 
         $this->assertCount(4, $results);
 
@@ -458,7 +458,7 @@ class SearchTest extends TestCase
             ->beginWithWildcard()
             ->orderByRelevance()
             ->orderByModel([Video::class, Post::class])
-            ->get('Apple iPad');
+            ->search('Apple iPad');
 
         $this->assertCount(4, $results);
         $this->assertTrue($results->first()->is($videoB), $results->toJson());
@@ -478,7 +478,7 @@ class SearchTest extends TestCase
             ->orderByRelevance();
 
         try {
-            $search->get('bar');
+            $search->search('bar');
         } catch (OrderByRelevanceException $e) {
             return $this->assertTrue(true);
         }
@@ -496,7 +496,7 @@ class SearchTest extends TestCase
             ->add(Video::class, ['title', 'subtitle'])
             ->beginWithWildcard()
             ->orderByRelevance()
-            ->get('Apple iPad');
+            ->search('Apple iPad');
 
         $this->assertCount(2, $results);
         $this->assertTrue($results->first()->is($videoB));
@@ -511,7 +511,7 @@ class SearchTest extends TestCase
         $results = Search::new()
             ->add(Video::class)
             ->orderByRelevance()
-            ->get();
+            ->search();
 
         $this->assertCount(2, $results);
     }
@@ -523,7 +523,7 @@ class SearchTest extends TestCase
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $results = $search->paginate()->get('foo');
+        $results = $search->paginate()->search('foo');
 
         $this->assertInstanceOf(LengthAwarePaginator::class, $results);
     }
@@ -536,7 +536,7 @@ class SearchTest extends TestCase
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $results = $search->simplePaginate()->get('foo');
+        $results = $search->simplePaginate()->search('foo');
 
         $this->assertInstanceOf(Paginator::class, $results);
     }
@@ -554,8 +554,8 @@ class SearchTest extends TestCase
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $resultsPage1 = $search->simplePaginate(2, 'page', 1)->get('foo');
-        $resultsPage2 = $search->simplePaginate(2, 'page', 2)->get('foo');
+        $resultsPage1 = $search->simplePaginate(2, 'page', 1)->search('foo');
+        $resultsPage2 = $search->simplePaginate(2, 'page', 2)->search('foo');
 
         $this->assertInstanceOf(Paginator::class, $resultsPage1);
         $this->assertInstanceOf(Paginator::class, $resultsPage2);
