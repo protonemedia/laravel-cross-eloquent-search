@@ -568,4 +568,21 @@ class SearchTest extends TestCase
         $this->assertTrue($resultsPage2->first()->is($postA));
         $this->assertTrue($resultsPage2->last()->is($videoA));
     }
+
+    /** @test */
+    public function it_includes_a_model_identifier_to_search_results()
+    {
+        Post::create(['title' => 'foo']);
+        Video::create(['title' => 'foo']);
+
+        $search = Search::new()
+            ->add(Post::class, 'title')
+            ->add(Video::class, 'title')
+            ->includeModelIdentifier()
+            ->paginate()
+            ->get('foo');
+
+        $this->assertEquals($search->toArray()['data'][0]['type'], class_basename(Post::class));
+        $this->assertEquals($search->toArray()['data'][1]['type'], class_basename(Video::class));
+    }
 }

@@ -279,6 +279,43 @@ Search::add(Post::published(), 'title')
     ->count('compile');
 ```
 
+### Model Identifier
+
+You can use the `includeModelIdentifier` to add a model identifer to the search result.
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->includeModelIdentifier()
+    ->paginate()
+    ->get('foo');
+
+// Example result with model identifier.
+{
+    "current_page": 1,
+    "data": [
+        {
+            "id": 1,
+            "video_id": null,
+            "title": "foo",
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "Post",
+        },
+        {
+            "id": 1,
+            "title": "foo",
+            "subtitle": null,
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "Video",
+        },
+    ],
+    ...
+}
+```
+
 ### Standalone parser
 
 You can use the parser with the `parseTerms` method:

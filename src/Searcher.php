@@ -12,6 +12,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 
 class Searcher
 {
@@ -93,6 +94,11 @@ class Searcher
     protected $page;
 
     /**
+     * Include a model identifier in the search results.
+     */
+    protected bool $includeModelIdentifier = false;
+
+    /**
      * Initialises the instanace with a fresh Collection and default sort.
      */
     public function __construct()
@@ -156,6 +162,16 @@ class Searcher
     public function dontParseTerm(): self
     {
         $this->parseTerm = false;
+
+        return $this;
+    }
+
+    /**
+     * Enable the inclusion of the model identifier in the search results.
+     */
+    public function includeModelIdentifier(): self
+    {
+        $this->includeModelIdentifier = true;
 
         return $this;
     }
@@ -663,6 +679,19 @@ class Searcher
     }
 
     /**
+     * Add an identifier to the model collection.
+     *
+     * @param Collection $models
+     * @return Collection
+     */
+    public function addModelIdentifierToModelCollection(Collection $models): Collection
+    {
+        return $models->map(fn (Model $model) =>
+            $model->setAttribute('type', class_basename($model))
+        );
+    }
+
+    /**
      * Initialize the search terms, execute the search query and retrieve all
      * models per type. Map the results to a Eloquent collection and set
      * the collection on the paginator (whenever used).
@@ -696,6 +725,9 @@ class Searcher
             return $modelsPerType->get($modelKey)->get($item->$modelKey);
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
+            ->when($this->includeModelIdentifier, fn (EloquentCollection $models) =>
+                $results->setCollection($this->addModelIdentifierToModelCollection($models))
+            )
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
     }
 }
