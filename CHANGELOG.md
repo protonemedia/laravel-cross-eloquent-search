@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.5.0 - 2021-12-19
+
+- Support for PHP 8.1
+- Dropped support for PHP 7.4
+- Dropped support for Laravel 6 and 7
+
 ## 2.4.0 - 2021-10-06
 
 - Added support for searching through (nested) relationships
