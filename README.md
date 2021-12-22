@@ -2,7 +2,6 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/protonemedia/laravel-cross-eloquent-search.svg?style=flat-square)](https://packagist.org/packages/protonemedia/laravel-cross-eloquent-search)
 ![run-tests](https://github.com/protonemedia/laravel-cross-eloquent-search/workflows/run-tests/badge.svg)
-[![Quality Score](https://img.shields.io/scrutinizer/g/protonemedia/laravel-cross-eloquent-search.svg?style=flat-square)](https://scrutinizer-ci.com/g/protonemedia/laravel-cross-eloquent-search)
 [![Total Downloads](https://img.shields.io/packagist/dt/protonemedia/laravel-cross-eloquent-search.svg?style=flat-square)](https://packagist.org/packages/protonemedia/laravel-cross-eloquent-search)
 [![Buy us a tree](https://img.shields.io/badge/Treeware-%F0%9F%8C%B3-lightgreen)](https://plant.treeware.earth/protonemedia/laravel-cross-eloquent-search)
 
@@ -14,9 +13,9 @@ Hey! We've built a Docker-based deployment tool to launch apps and sites fully c
 
 ## Requirements
 
-* PHP 7.4+
+* PHP 8.0 + 8.1
 * MySQL 5.7+
-* Laravel 6.0 and higher
+* Laravel 8.0
 
 ## Features
 
@@ -277,6 +276,51 @@ You can count the number of results with the `count` method:
 Search::add(Post::published(), 'title')
     ->add(Video::where('views', '>', 2500), 'title')
     ->count('compile');
+```
+
+### Model Identifier
+
+You can use the `includeModelType` to add the model type to the search result.
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->includeModelType()
+    ->paginate()
+    ->get('foo');
+
+// Example result with model identifier.
+{
+    "current_page": 1,
+    "data": [
+        {
+            "id": 1,
+            "video_id": null,
+            "title": "foo",
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "Post",
+        },
+        {
+            "id": 1,
+            "title": "foo",
+            "subtitle": null,
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "Video",
+        },
+    ],
+    ...
+}
+```
+
+By default, it uses the `type` key, but you can customize this by passing the key to the method.
+
+```php
+Search::new()
+    ->includeModelType('model_type');
 ```
 
 ### Standalone parser

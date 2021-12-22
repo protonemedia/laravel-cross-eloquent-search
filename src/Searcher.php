@@ -12,6 +12,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 
 class Searcher
 {
@@ -93,6 +94,11 @@ class Searcher
     protected $page;
 
     /**
+     * Include the model type in the search results.
+     */
+    protected ?string $includeModelTypeWithKey = null;
+
+    /**
      * Initialises the instanace with a fresh Collection and default sort.
      */
     public function __construct()
@@ -156,6 +162,19 @@ class Searcher
     public function dontParseTerm(): self
     {
         $this->parseTerm = false;
+
+        return $this;
+    }
+
+    /**
+     * Enable the inclusion of the model type in the search results.
+     *
+     * @param string $key
+     * @return self
+     */
+    public function includeModelType(string $key = 'type'): self
+    {
+        $this->includeModelTypeWithKey = $key;
 
         return $this;
     }
@@ -693,7 +712,14 @@ class Searcher
                 return $value && Str::endsWith($key, '_key');
             });
 
-            return $modelsPerType->get($modelKey)->get($item->$modelKey);
+            /** @var Model $model */
+            $model = $modelsPerType->get($modelKey)->get($item->$modelKey);
+
+            if ($this->includeModelTypeWithKey) {
+                $model->setAttribute($this->includeModelTypeWithKey, class_basename($model));
+            }
+
+            return $model;
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
