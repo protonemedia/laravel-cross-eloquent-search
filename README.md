@@ -317,7 +317,7 @@ Search::add(Post::class, 'title')
 }
 ```
 
-By default, the `type` key will be used, but you can customize this by passing the key to the method:
+By default, it uses the `type` key, but you can customize this by passing the key to the method.
 
 ```php
 Search::new()
