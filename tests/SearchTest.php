@@ -378,6 +378,21 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_doesnt_add_term_constraints_when_the_search_query_is_empty()
+    {
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar']);
+
+        $videoA->posts()->create(['title' => 'far']);
+
+        $results = Search::new()
+            ->add(Video::class, ['title', 'posts.title'])
+            ->get();
+
+        $this->assertCount(2, $results);
+    }
+
+    /** @test */
     public function it_can_sort_by_model_order()
     {
         $post    = Post::create(['title' => 'foo']);

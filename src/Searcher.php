@@ -393,6 +393,10 @@ class Searcher
      */
     public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
     {
+        if ($this->termsWithoutWildcards->isEmpty()) {
+            return;
+        }
+
         $builder->where(function (Builder $query) use ($modelToSearchThrough) {
             $modelToSearchThrough->getColumns()->each(function ($column) use ($query, $modelToSearchThrough) {
                 Str::contains($column, '.')
