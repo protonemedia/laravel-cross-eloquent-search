@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.6.0 - 2021-12-22
+
+- Added `includeModelType` method (thanks @mrkalmdn!)
+
 ## 2.5.0 - 2021-12-19
 
 - Support for PHP 8.1

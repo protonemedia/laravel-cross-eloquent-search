@@ -279,6 +279,51 @@ Search::add(Post::published(), 'title')
     ->count('compile');
 ```
 
+### Model Identifier
+
+You can use the `includeModelType` to add the model type to the search result.
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->includeModelType()
+    ->paginate()
+    ->get('foo');
+
+// Example result with model identifier.
+{
+    "current_page": 1,
+    "data": [
+        {
+            "id": 1,
+            "video_id": null,
+            "title": "foo",
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "Post",
+        },
+        {
+            "id": 1,
+            "title": "foo",
+            "subtitle": null,
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "Video",
+        },
+    ],
+    ...
+}
+```
+
+By default, it uses the `type` key, but you can customize this by passing the key to the method.
+
+```php
+Search::new()
+    ->includeModelType('model_type');
+```
+
 ### Standalone parser
 
 You can use the parser with the `parseTerms` method:
