@@ -189,12 +189,21 @@ class Searcher
      */
     public function add($query, $columns = null, string $orderByColumn = null): self
     {
+        /** @var Builder $builder */
         $builder = is_string($query) ? $query::query() : $query;
+
+        if (is_null($orderByColumn)) {
+            $model = $builder->getModel();
+
+            $orderByColumn = $model->usesTimestamps()
+                ? $model->getUpdatedAtColumn()
+                : $model->getKeyName();
+        }
 
         $modelToSearchThrough = new ModelToSearchThrough(
             $builder,
             Collection::wrap($columns),
-            $orderByColumn ?: $builder->getModel()->getUpdatedAtColumn(),
+            $orderByColumn,
             $this->modelsToSearchThrough->count()
         );
 
