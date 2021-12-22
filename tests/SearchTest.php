@@ -580,7 +580,7 @@ class SearchTest extends TestCase
             ->add(Video::class, 'title', 'title')
             ->includeModelType()
             ->paginate()
-            ->get('ba');
+            ->search('ba');
 
         $this->assertEquals($search->toArray()['data'][0]['type'], class_basename(Post::class));
         $this->assertEquals($search->toArray()['data'][1]['type'], class_basename(Video::class));
