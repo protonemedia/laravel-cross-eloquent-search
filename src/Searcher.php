@@ -94,9 +94,9 @@ class Searcher
     protected $page;
 
     /**
-     * Include a model identifier in the search results.
+     * Include the model type in the search results.
      */
-    protected bool $includeModelIdentifier = false;
+    protected ?string $includeModelTypeWithKey = null;
 
     /**
      * Initialises the instanace with a fresh Collection and default sort.
@@ -167,11 +167,14 @@ class Searcher
     }
 
     /**
-     * Enable the inclusion of the model identifier in the search results.
+     * Enable the inclusion of the model type in the search results.
+     *
+     * @param string $key
+     * @return self
      */
-    public function includeModelIdentifier(): self
+    public function includeModelType(string $key = 'type'): self
     {
-        $this->includeModelIdentifier = true;
+        $this->includeModelTypeWithKey = $key;
 
         return $this;
     }
@@ -679,19 +682,6 @@ class Searcher
     }
 
     /**
-     * Add an identifier to the model collection.
-     *
-     * @param Collection $models
-     * @return Collection
-     */
-    public function addModelIdentifierToModelCollection(Collection $models): Collection
-    {
-        return $models->map(fn (Model $model) =>
-            $model->setAttribute('type', class_basename($model))
-        );
-    }
-
-    /**
      * Initialize the search terms, execute the search query and retrieve all
      * models per type. Map the results to a Eloquent collection and set
      * the collection on the paginator (whenever used).
@@ -722,12 +712,16 @@ class Searcher
                 return $value && Str::endsWith($key, '_key');
             });
 
-            return $modelsPerType->get($modelKey)->get($item->$modelKey);
+            /** @var Model $model */
+            $model = $modelsPerType->get($modelKey)->get($item->$modelKey);
+
+            if ($this->includeModelTypeWithKey) {
+                $model->setAttribute($this->includeModelTypeWithKey, class_basename($model));
+            }
+
+            return $model;
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
-            ->when($this->includeModelIdentifier, fn (EloquentCollection $models) =>
-                $results->setCollection($this->addModelIdentifierToModelCollection($models))
-            )
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
     }
 }

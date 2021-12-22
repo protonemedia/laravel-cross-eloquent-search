@@ -578,7 +578,7 @@ class SearchTest extends TestCase
         $search = Search::new()
             ->add(Post::class, 'title')
             ->add(Video::class, 'title')
-            ->includeModelIdentifier()
+            ->includeModelType()
             ->paginate()
             ->get('foo');
 

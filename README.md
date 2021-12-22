@@ -281,11 +281,12 @@ Search::add(Post::published(), 'title')
 
 ### Model Identifier
 
-You can use the `includeModelIdentifier` to add a model identifer to the search result.
+You can use the `includeModelType` to add the model type to the search result.
+
 ```php
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->includeModelIdentifier()
+    ->includeModelType()
     ->paginate()
     ->get('foo');
 
@@ -314,6 +315,13 @@ Search::add(Post::class, 'title')
     ],
     ...
 }
+```
+
+By default, the `type` key will be used, but you can customize this by passing the key to the method:
+
+```php
+Search::new()
+    ->includeModelType('model_type');
 ```
 
 ### Standalone parser
