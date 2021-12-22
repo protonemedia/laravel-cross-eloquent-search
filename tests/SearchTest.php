@@ -572,15 +572,15 @@ class SearchTest extends TestCase
     /** @test */
     public function it_includes_a_model_identifier_to_search_results()
     {
-        Post::create(['title' => 'foo']);
-        Video::create(['title' => 'foo']);
+        Post::create(['title' => 'bar']);
+        Video::create(['title' => 'baz']);
 
         $search = Search::new()
-            ->add(Post::class, 'title')
-            ->add(Video::class, 'title')
+            ->add(Post::class, 'title', 'title')
+            ->add(Video::class, 'title', 'title')
             ->includeModelType()
             ->paginate()
-            ->get('foo');
+            ->get('ba');
 
         $this->assertEquals($search->toArray()['data'][0]['type'], class_basename(Post::class));
         $this->assertEquals($search->toArray()['data'][1]['type'], class_basename(Video::class));
