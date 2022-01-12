@@ -36,6 +36,32 @@ class CreateTables extends Migration
             $table->date('published_at')->nullable();
             $table->timestamps();
         });
+
+        Schema::create('blogs', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('title');
+            $table->string('subtitle');
+            $table->string('body');
+
+            $table->fullText('title');
+            $table->fullText(['title', 'subtitle']);
+            $table->fullText(['title', 'subtitle', 'body']);
+
+            $table->timestamps();
+        });
+
+        Schema::create('pages', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('title');
+            $table->string('subtitle');
+            $table->string('body');
+
+            $table->fullText('title');
+            $table->fullText(['title', 'subtitle']);
+            $table->fullText(['title', 'subtitle', 'body']);
+
+            $table->timestamps();
+        });
     }
     /**
      * Reverse the migrations.
