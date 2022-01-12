@@ -600,4 +600,31 @@ class SearchTest extends TestCase
         $this->assertEquals($search->toArray()['data'][0]['type'], class_basename(Post::class));
         $this->assertEquals($search->toArray()['data'][1]['type'], class_basename(Video::class));
     }
+
+    /** @test */
+    public function it_supports_full_text_search()
+    {
+        $postA = Post::create(['title' => 'Laravel Framework']);
+        $postB = Post::create(['title' => 'Tailwind Framework']);
+
+        $blogA = Blog::create(['title' => 'Laravel Framework', 'subtitle' => 'PHP', 'body' => 'Ad nostrud adipisicing deserunt labore reprehenderit ']);
+        $blogB = Blog::create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
+
+        $pageA = Page::create(['title' => 'Laravel Framework', 'subtitle' => 'PHP', 'body' => 'Ad nostrud adipisicing deserunt labore reprehenderit ']);
+        $pageB = Page::create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
+
+        $results = Search::new()
+            ->beginWithWildcard()
+            ->add(Post::class, 'title')
+            ->addFullText(Blog::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
+            ->addFullText(Page::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
+            ->get('framework -css');
+
+        $this->assertCount(4, $results);
+
+        $this->assertTrue($results->contains($postA));
+        $this->assertTrue($results->contains($postB));
+        $this->assertTrue($results->contains($blogA));
+        $this->assertTrue($results->contains($pageA));
+    }
 }
