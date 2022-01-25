@@ -647,5 +647,8 @@ class SearchTest extends TestCase
         
         $this->assertCount(2, $resultA);
         $this->assertCount(2, $resultB);    
+
+        $this->assertTrue($resultA->first()->is($postA));
+        $this->assertTrue($resultB->first()->is($postA));
     }
 }
