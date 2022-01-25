@@ -630,7 +630,10 @@ class SearchTest extends TestCase
 
     /** @test */
     public function it_returns_data_consistently() {
+        Carbon::setTestNow(now());
         $postA = Post::create(['title' => 'Laravel Framework']);
+
+        Carbon::setTestNow(now()->addSecond());
         $postB = Post::create(['title' => 'Tailwind Framework']);
 
         $this->assertEquals(2, Post::all()->count());
