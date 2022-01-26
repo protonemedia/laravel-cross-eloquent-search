@@ -318,9 +318,47 @@ Search::add(Post::class, 'title')
 
 By default, it uses the `type` key, but you can customize this by passing the key to the method.
 
+Also you can customize the `$type` name by adding a public property `$searchType` on your model. This will override the default class base name.
+
 ```php
-Search::new()
-    ->includeModelType('model_type');
+class Video extends Model
+{
+    public $searchType = 'videos';
+}
+...
+
+class Post extends Model
+{
+    public $searchType = 'posts';
+}
+...
+
+
+
+    // Example result with $searchType.
+{
+    "current_page": 1,
+    "data": [
+        {
+            "id": 1,
+            "video_id": null,
+            "title": "foo",
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "videos",
+        },
+        {
+            "id": 1,
+            "title": "foo",
+            "subtitle": null,
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "posts",
+        },
+    ],
+    ...
 ```
 
 ### Standalone parser
