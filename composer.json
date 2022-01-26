@@ -16,8 +16,8 @@
         }
     ],
     "require": {
-        "php": "^8.0|^8.1",
-        "illuminate/support": "^8.79"
+        "php": "^7.3|^7.4|^8.0|^8.1",
+        "illuminate/support": "^8.17|^8.79"
     },
     "require-dev": {
         "mockery/mockery": "^1.3.3",
