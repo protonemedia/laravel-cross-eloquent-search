@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.7.0 - 2022-02-04
+
+- Support for Laravel 9
+
 ## 2.6.1 - 2021-12-22
 
 - Bugfix for excluding models when searching for relations without a search term (fixes #37).

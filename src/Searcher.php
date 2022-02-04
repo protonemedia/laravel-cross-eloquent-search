@@ -370,10 +370,12 @@ class Searcher
      */
     public function parseTerms(string $terms, callable $callback = null): Collection
     {
+        $callback = $callback ?: fn () => null;
+
         return Collection::make(str_getcsv($terms, ' ', '"'))
             ->filter()
             ->values()
-            ->when($callback, function ($terms, $callback) {
+            ->when($callback !== null, function ($terms) use ($callback) {
                 return $terms->each(fn ($value, $key) => $callback($value, $key));
             });
     }
