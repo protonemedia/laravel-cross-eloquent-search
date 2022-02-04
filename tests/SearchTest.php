@@ -627,4 +627,31 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains($blogA));
         $this->assertTrue($results->contains($pageA));
     }
+
+    /** @test */
+    public function it_returns_data_consistently() {
+        Carbon::setTestNow(now());
+        $postA = Post::create(['title' => 'Laravel Framework']);
+
+        Carbon::setTestNow(now()->addSecond());
+        $postB = Post::create(['title' => 'Tailwind Framework']);
+
+        $this->assertEquals(2, Post::all()->count());
+        $this->assertEquals(0, Blog::all()->count());
+
+        $resultA = Search::addMany([
+            [Post::query(), 'title'],
+        ])->get('');
+
+        $resultB = Search::addMany([
+            [Post::query(), 'title'],
+            [Blog::query(), 'title'],
+        ])->get('');
+        
+        $this->assertCount(2, $resultA);
+        $this->assertCount(2, $resultB);    
+
+        $this->assertTrue($resultA->first()->is($postA));
+        $this->assertTrue($resultB->first()->is($postA));
+    }
 }
