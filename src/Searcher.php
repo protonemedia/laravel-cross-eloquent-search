@@ -13,9 +13,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Conditionable;
 
 class Searcher
 {
+    use Conditionable;
+
     /**
      * Collection of models to search through.
      */
