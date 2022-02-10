@@ -8,6 +8,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
+use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
 
 class SearchTest extends TestCase
 {
@@ -653,5 +654,25 @@ class SearchTest extends TestCase
 
         $this->assertTrue($resultA->first()->is($postA));
         $this->assertTrue($resultB->first()->is($postA));
+    }
+
+    /** @test */
+    public function it_can_conditionally_apply_ordering()
+    {
+        Carbon::setTestNow(now());
+        $postA = Post::create(['title' => 'foo']);
+
+        Carbon::setTestNow(now()->subDay());
+        $postB = Post::create(['title' => 'foo2']);
+
+        $results = Search::add(Post::class, 'title')
+            ->when(true, fn (Searcher $searcher) => $searcher->orderByDesc())
+            ->get('foo');
+
+        $this->assertInstanceOf(Collection::class, $results);
+        $this->assertCount(2, $results);
+
+        $this->assertTrue($results->first()->is($postA));
+        $this->assertTrue($results->last()->is($postB));
     }
 }
