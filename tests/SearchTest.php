@@ -8,6 +8,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
+use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
 
 class SearchTest extends TestCase
 {
@@ -626,5 +627,52 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains($postB));
         $this->assertTrue($results->contains($blogA));
         $this->assertTrue($results->contains($pageA));
+    }
+
+    /** @test */
+    public function it_returns_data_consistently() {
+        Carbon::setTestNow(now());
+        $postA = Post::create(['title' => 'Laravel Framework']);
+
+        Carbon::setTestNow(now()->addSecond());
+        $postB = Post::create(['title' => 'Tailwind Framework']);
+
+        $this->assertEquals(2, Post::all()->count());
+        $this->assertEquals(0, Blog::all()->count());
+
+        $resultA = Search::addMany([
+            [Post::query(), 'title'],
+        ])->get('');
+
+        $resultB = Search::addMany([
+            [Post::query(), 'title'],
+            [Blog::query(), 'title'],
+        ])->get('');
+        
+        $this->assertCount(2, $resultA);
+        $this->assertCount(2, $resultB);    
+
+        $this->assertTrue($resultA->first()->is($postA));
+        $this->assertTrue($resultB->first()->is($postA));
+    }
+
+    /** @test */
+    public function it_can_conditionally_apply_ordering()
+    {
+        Carbon::setTestNow(now());
+        $postA = Post::create(['title' => 'foo']);
+
+        Carbon::setTestNow(now()->subDay());
+        $postB = Post::create(['title' => 'foo2']);
+
+        $results = Search::add(Post::class, 'title')
+            ->when(true, fn (Searcher $searcher) => $searcher->orderByDesc())
+            ->get('foo');
+
+        $this->assertInstanceOf(Collection::class, $results);
+        $this->assertCount(2, $results);
+
+        $this->assertTrue($results->first()->is($postA));
+        $this->assertTrue($results->last()->is($postB));
     }
 }

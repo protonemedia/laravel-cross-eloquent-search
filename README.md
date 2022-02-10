@@ -15,7 +15,7 @@ Hey! We've built a Docker-based deployment tool to launch apps and sites fully c
 
 * PHP 8.0 + 8.1
 * MySQL 5.7+
-* Laravel 8.0
+* Laravel 8.0 or 9.0
 
 ## Features
 
