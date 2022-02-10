@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 2.7.1 - 2022-02-10
+
+- Add Conditionable trait to Searcher (thanks @Daanra!)
+
 ## 2.7.0 - 2022-02-04
 
 - Support for Laravel 9
