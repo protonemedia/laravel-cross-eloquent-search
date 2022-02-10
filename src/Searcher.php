@@ -4,6 +4,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
@@ -12,10 +13,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Traits\Conditionable;
 
 class Searcher
 {
+    use Conditionable;
+
     /**
      * Collection of models to search through.
      */
@@ -55,6 +58,11 @@ class Searcher
      * Ignore case.
      */
     protected bool $ignoreCase = false;
+
+    /**
+     * Raw input.
+     */
+    protected ?string $rawTerms = null;
 
     /**
      * Collection of search terms.
@@ -185,6 +193,7 @@ class Searcher
      * @param \Illuminate\Database\Eloquent\Builder|string $query
      * @param string|array|\Illuminate\Support\Collection $columns
      * @param string $orderByColumn
+     * @param bool $fullText
      * @return self
      */
     public function add($query, $columns = null, string $orderByColumn = null): self
@@ -203,8 +212,26 @@ class Searcher
         $modelToSearchThrough = new ModelToSearchThrough(
             $builder,
             Collection::wrap($columns),
-            $orderByColumn,
-            $this->modelsToSearchThrough->count()
+            $orderByColumn ?: $builder->getModel()->getUpdatedAtColumn(),
+            $this->modelsToSearchThrough->count(),
+        );
+
+        $this->modelsToSearchThrough->push($modelToSearchThrough);
+
+        return $this;
+    }
+
+    public function addFullText($query, $columns = null, array $options = [], string $orderByColumn = null): self
+    {
+        $builder = is_string($query) ? $query::query() : $query;
+
+        $modelToSearchThrough = new ModelToSearchThrough(
+            $builder,
+            Collection::wrap($columns),
+            $orderByColumn ?: $builder->getModel()->getUpdatedAtColumn(),
+            $this->modelsToSearchThrough->count(),
+            true,
+            $options
         );
 
         $this->modelsToSearchThrough->push($modelToSearchThrough);
@@ -355,10 +382,12 @@ class Searcher
      */
     public function parseTerms(string $terms, callable $callback = null): Collection
     {
+        $callback = $callback ?: fn () => null;
+
         return Collection::make(str_getcsv($terms, ' ', '"'))
             ->filter()
             ->values()
-            ->when($callback, function ($terms, $callback) {
+            ->when($callback !== null, function ($terms) use ($callback) {
                 return $terms->each(fn ($value, $key) => $callback($value, $key));
             });
     }
@@ -372,6 +401,8 @@ class Searcher
      */
     protected function initializeTerms(string $terms): self
     {
+        $this->rawTerms = $terms;
+
         $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
 
         $this->termsWithoutWildcards = Collection::wrap($terms)->filter()->map(function ($term) {
@@ -402,11 +433,24 @@ class Searcher
      */
     public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
     {
+        if ($this->termsWithoutWildcards->isEmpty()) {
+            return;
+        }
+
         $builder->where(function (Builder $query) use ($modelToSearchThrough) {
+            if ($modelToSearchThrough->searchFullText()) {
+                return $this->addWhereTermsToQuery(
+                    $query,
+                    $modelToSearchThrough->getColumns()->map(fn ($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
+                    true,
+                    $modelToSearchThrough->fullTextOptions()
+                );
+            }
+
             $modelToSearchThrough->getColumns()->each(function ($column) use ($query, $modelToSearchThrough) {
                 Str::contains($column, '.')
-                    ? $this->addNestedRelationToQuery($query, $column)
-                    : $this->addWhereTermsToQuery($query, $modelToSearchThrough->qualifyColumn($column));
+                    ? $this->addNestedRelationToQuery($query, $column, $modelToSearchThrough->searchFullText())
+                    : $this->addWhereTermsToQuery($query, $modelToSearchThrough->qualifyColumn($column), $modelToSearchThrough->searchFullText());
             });
         });
     }
@@ -437,11 +481,17 @@ class Searcher
      * Adds an 'orWhere' clause to search for each term in the given column.
      *
      * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param string $column
+     * @param array|string $columns
+     * @param bool $fullText
+     * @param array $fullTextOptions
      * @return void
      */
-    private function addWhereTermsToQuery(Builder $query, string $column)
+    private function addWhereTermsToQuery(Builder $query, $column, bool $fullText = false, array $fullTextOptions = [])
     {
+        if ($fullText) {
+            return $query->orWhereFullText($column, $this->rawTerms, $fullTextOptions);
+        }
+
         $column = $this->ignoreCase ? (new MySqlGrammar)->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {

@@ -8,6 +8,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
+use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
 
 class SearchTest extends TestCase
 {
@@ -378,6 +379,21 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_doesnt_add_term_constraints_when_the_search_query_is_empty()
+    {
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar']);
+
+        $videoA->posts()->create(['title' => 'far']);
+
+        $results = Search::new()
+            ->add(Video::class, ['title', 'posts.title'])
+            ->get();
+
+        $this->assertCount(2, $results);
+    }
+
+    /** @test */
     public function it_can_sort_by_model_order()
     {
         $post    = Post::create(['title' => 'foo']);
@@ -584,5 +600,79 @@ class SearchTest extends TestCase
 
         $this->assertEquals($search->toArray()['data'][0]['type'], class_basename(Post::class));
         $this->assertEquals($search->toArray()['data'][1]['type'], class_basename(Video::class));
+    }
+
+    /** @test */
+    public function it_supports_full_text_search()
+    {
+        $postA = Post::create(['title' => 'Laravel Framework']);
+        $postB = Post::create(['title' => 'Tailwind Framework']);
+
+        $blogA = Blog::create(['title' => 'Laravel Framework', 'subtitle' => 'PHP', 'body' => 'Ad nostrud adipisicing deserunt labore reprehenderit ']);
+        $blogB = Blog::create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
+
+        $pageA = Page::create(['title' => 'Laravel Framework', 'subtitle' => 'PHP', 'body' => 'Ad nostrud adipisicing deserunt labore reprehenderit ']);
+        $pageB = Page::create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
+
+        $results = Search::new()
+            ->beginWithWildcard()
+            ->add(Post::class, 'title')
+            ->addFullText(Blog::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
+            ->addFullText(Page::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
+            ->get('framework -css');
+
+        $this->assertCount(4, $results);
+
+        $this->assertTrue($results->contains($postA));
+        $this->assertTrue($results->contains($postB));
+        $this->assertTrue($results->contains($blogA));
+        $this->assertTrue($results->contains($pageA));
+    }
+
+    /** @test */
+    public function it_returns_data_consistently() {
+        Carbon::setTestNow(now());
+        $postA = Post::create(['title' => 'Laravel Framework']);
+
+        Carbon::setTestNow(now()->addSecond());
+        $postB = Post::create(['title' => 'Tailwind Framework']);
+
+        $this->assertEquals(2, Post::all()->count());
+        $this->assertEquals(0, Blog::all()->count());
+
+        $resultA = Search::addMany([
+            [Post::query(), 'title'],
+        ])->get('');
+
+        $resultB = Search::addMany([
+            [Post::query(), 'title'],
+            [Blog::query(), 'title'],
+        ])->get('');
+        
+        $this->assertCount(2, $resultA);
+        $this->assertCount(2, $resultB);    
+
+        $this->assertTrue($resultA->first()->is($postA));
+        $this->assertTrue($resultB->first()->is($postA));
+    }
+
+    /** @test */
+    public function it_can_conditionally_apply_ordering()
+    {
+        Carbon::setTestNow(now());
+        $postA = Post::create(['title' => 'foo']);
+
+        Carbon::setTestNow(now()->subDay());
+        $postB = Post::create(['title' => 'foo2']);
+
+        $results = Search::add(Post::class, 'title')
+            ->when(true, fn (Searcher $searcher) => $searcher->orderByDesc())
+            ->get('foo');
+
+        $this->assertInstanceOf(Collection::class, $results);
+        $this->assertCount(2, $results);
+
+        $this->assertTrue($results->first()->is($postA));
+        $this->assertTrue($results->last()->is($postB));
     }
 }

@@ -30,17 +30,31 @@ class ModelToSearchThrough
     protected int $key;
 
     /**
+     * Full-text search.
+     */
+    protected bool $fullText;
+
+    /**
+     * Full-text search options
+     */
+    protected array $fullTextOptions = [];
+
+    /**
      * @param \Illuminate\Database\Eloquent\Builder $builder
      * @param \Illuminate\Support\Collection $columns
      * @param string $orderByColumn
      * @param integer $key
+     * @param bool $fullText
+     * @param array $fullTextOptions
      */
-    public function __construct(Builder $builder, Collection $columns, string $orderByColumn, int $key)
+    public function __construct(Builder $builder, Collection $columns, string $orderByColumn, int $key, bool $fullText = false, array $fullTextOptions = [])
     {
-        $this->builder       = $builder;
-        $this->columns       = $columns;
-        $this->orderByColumn = $orderByColumn;
-        $this->key           = $key;
+        $this->builder         = $builder;
+        $this->columns         = $columns;
+        $this->orderByColumn   = $orderByColumn;
+        $this->key             = $key;
+        $this->fullText        = $fullText;
+        $this->fullTextOptions = $fullTextOptions;
     }
 
     /**
@@ -141,5 +155,25 @@ class ModelToSearchThrough
     public function getQualifiedOrderByColumnName(): string
     {
         return $this->qualifyColumn($this->orderByColumn);
+    }
+
+    /**
+     * Full-text search.
+     *
+     * @return boolean
+     */
+    public function searchFullText(): bool
+    {
+        return $this->fullText;
+    }
+
+    /**
+     * Full-text search options.
+     *
+     * @return array
+     */
+    public function fullTextOptions(): array
+    {
+        return $this->fullTextOptions;
     }
 }
