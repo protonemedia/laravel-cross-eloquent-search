@@ -287,7 +287,7 @@ Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->includeModelType()
     ->paginate()
-    ->get('foo');
+    ->search('foo');
 
 // Example result with model identifier.
 {
