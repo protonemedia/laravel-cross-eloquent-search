@@ -420,20 +420,35 @@ class Searcher
         }
 
         $builder->where(function (Builder $query) use ($modelToSearchThrough) {
-            if ($modelToSearchThrough->searchFullText()) {
-                return $this->addWhereTermsToQuery(
-                    $query,
-                    $modelToSearchThrough->getColumns()->map(fn ($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
-                    true,
-                    $modelToSearchThrough->fullTextOptions()
-                );
+            if (!$modelToSearchThrough->isFullTextSearch()) {
+                return $modelToSearchThrough->getColumns()->each(function ($column) use ($query, $modelToSearchThrough) {
+                    Str::contains($column, '.')
+                        ? $this->addNestedRelationToQuery($query, $column)
+                        : $this->addWhereTermsToQuery($query, $modelToSearchThrough->qualifyColumn($column));
+                });
             }
 
-            $modelToSearchThrough->getColumns()->each(function ($column) use ($query, $modelToSearchThrough) {
-                Str::contains($column, '.')
-                    ? $this->addNestedRelationToQuery($query, $column, $modelToSearchThrough->searchFullText())
-                    : $this->addWhereTermsToQuery($query, $modelToSearchThrough->qualifyColumn($column), $modelToSearchThrough->searchFullText());
-            });
+            $modelToSearchThrough
+                ->toGroupedCollection()
+                ->each(function (ModelToSearchThrough $modelToSearchThrough) use ($query) {
+                    if ($relation = $modelToSearchThrough->getFullTextRelation()) {
+                        $query->orWhereHas($relation, function ($relationQuery) use ($modelToSearchThrough) {
+                            $relationQuery->where(function ($query) use ($modelToSearchThrough) {
+                                $query->orWhereFullText(
+                                    $modelToSearchThrough->getColumns()->all(),
+                                    $this->rawTerms,
+                                    $modelToSearchThrough->getFullTextOptions()
+                                );
+                            });
+                        });
+                    } else {
+                        $query->orWhereFullText(
+                            $modelToSearchThrough->getColumns()->map(fn ($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
+                            $this->rawTerms,
+                            $modelToSearchThrough->getFullTextOptions()
+                        );
+                    }
+                });
         });
     }
 
@@ -464,16 +479,10 @@ class Searcher
      *
      * @param \Illuminate\Database\Eloquent\Builder $builder
      * @param array|string $columns
-     * @param bool $fullText
-     * @param array $fullTextOptions
      * @return void
      */
-    private function addWhereTermsToQuery(Builder $query, $column, bool $fullText = false, array $fullTextOptions = [])
+    private function addWhereTermsToQuery(Builder $query, $column)
     {
-        if ($fullText) {
-            return $query->orWhereFullText($column, $this->rawTerms, $fullTextOptions);
-        }
-
         $column = $this->ignoreCase ? (new MySqlGrammar)->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {

@@ -645,6 +645,25 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_supports_full_text_search_on_relations()
+    {
+        $pageA = Page::create(['title' => 'Page 1']);
+        $pageB = Page::create(['title' => 'Page 2']);
+
+        $blogA = $pageA->blogs()->create(['title' => 'Laravel Framework', 'subtitle' => 'PHP', 'body' => 'Ad nostrud adipisicing deserunt labore reprehenderit ']);
+        $blogB = $pageB->blogs()->create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
+
+        $results = Search::new()
+            ->beginWithWildcard()
+            ->addFullText(Page::class, ['blogs' => ['title', 'subtitle', 'body']], ['mode' => 'boolean'])
+            ->search('framework -css');
+
+        $this->assertCount(1, $results);
+
+        $this->assertTrue($results->contains($pageA));
+    }
+
+    /** @test */
     public function it_returns_data_consistently()
     {
         Carbon::setTestNow(now());
