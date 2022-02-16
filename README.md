@@ -324,7 +324,7 @@ Search::add(Post::class, 'title')
 
 By default, it uses the `type` key, but you can customize this by passing the key to the method.
 
-Also you can customize the `$type` name by adding a public method `searchType()` on your model. This will override the default class base name.
+You can also customize the `type` value by adding a public method `searchType()` to your model to override the default class base name.
 
 ```php
 class Video extends Model
