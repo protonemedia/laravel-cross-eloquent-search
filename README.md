@@ -243,7 +243,7 @@ Search::add(Post::class, ['comments.body'])
 
 ### Full-Text Search
 
-You may use [MySQL's Full-Text Search](https://laravel.com/docs/master/queries#full-text-where-clauses) by using the `addFullText` method. You can search through a single or multiple columns (using [full text indexes](https://laravel.com/docs/master/migrations#available-index-types)), and you can specify a set of options, for example, to specify the mode. You can even regular and full-text searches in one query:
+You may use [MySQL's Full-Text Search](https://laravel.com/docs/master/queries#full-text-where-clauses) by using the `addFullText` method. You can search through a single or multiple columns (using [full text indexes](https://laravel.com/docs/master/migrations#available-index-types)), and you can specify a set of options, for example, to specify the mode. You can even mix regular and full-text searches in one query:
 
 ```php
 Search::new()
@@ -260,7 +260,7 @@ Search::new()
     ->addFullText(Page::class, [
         'posts' => ['title', 'body'],
         'sections' => ['title', 'subtitle', 'body'],
-    ], )
+    ])
     ->search('framework -css');
 ```
 
