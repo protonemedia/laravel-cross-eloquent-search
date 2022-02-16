@@ -57,7 +57,7 @@ composer require protonemedia/laravel-cross-eloquent-search
 
 Start your search query by adding one or more models to search through. Call the `add` method with the model's class name and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.
 
-The results are sorted in ascending order by the *updated* column by default. In most cases, this column is `updated_at`. If you've [customized](https://laravel.com/docs/master/eloquent#timestamps) your model's `UPDATED_AT` constant, or overwritten the `getUpdatedAtColumn` method, this package will use the customized column. Of course, you can [order by another column](#sorting) as well.
+The results are sorted in ascending order by the *updated* column by default. In most cases, this column is `updated_at`. If you've [customized](https://laravel.com/docs/master/eloquent#timestamps) your model's `UPDATED_AT` constant, or overwritten the `getUpdatedAtColumn` method, this package will use the customized column. If you don't use timestamps at all, it will use the primary key by default. Of course, you can [order by another column](#sorting) as well.
 
 ```php
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
