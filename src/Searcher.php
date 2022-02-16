@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -483,7 +482,7 @@ class Searcher
      */
     private function addWhereTermsToQuery(Builder $query, $column)
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar)->wrap($column) : $column;
+        $column = $this->ignoreCase ? $query->getQuery()->getGrammar()->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
             $this->ignoreCase
@@ -499,7 +498,7 @@ class Searcher
      * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $modelToSearchThrough
      * @return void
      */
-    private function addRelevanceQueryToBuilder($builder, $modelToSearchThrough)
+    private function addRelevanceQueryToBuilder(Builder $builder, $modelToSearchThrough)
     {
         if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
             return;
@@ -509,8 +508,8 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) {
-            $field = (new MySqlGrammar)->wrap($field);
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($builder) {
+            $field = $builder->getQuery()->getGrammar()->wrap($field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
                 return [
