@@ -47,7 +47,13 @@ You can install the package via composer:
 composer require protonemedia/laravel-cross-eloquent-search
 ```
 
-## Upgrading from v1
+## Upgrading from v2 to v3
+
+* The `get` method has been renamed to `search`.
+* The `addWhen` method has been removed in favor of [`when`](#usage).
+* By default, the results are sorted by the *updated* column, which is the `updated_at` column in most cases. If you don't use timestamps, it will now use the primary key by default.
+
+## Upgrading from v1 to v2
 
 * The `startWithWildcard` method has been renamed to `beginWithWildcard`.
 * The default order column is now evaluated by the `getUpdatedAtColumn` method. Previously it was hard-coded to `updated_at`. You still can use [another column](#sorting) to order by.

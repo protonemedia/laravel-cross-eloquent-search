@@ -212,7 +212,7 @@ class Searcher
         $modelToSearchThrough = new ModelToSearchThrough(
             $builder,
             Collection::wrap($columns),
-            $orderByColumn ?: $builder->getModel()->getUpdatedAtColumn(),
+            $orderByColumn,
             $this->modelsToSearchThrough->count(),
         );
 
