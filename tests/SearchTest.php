@@ -186,8 +186,8 @@ class SearchTest extends TestCase
         Video::create(['title' => 'bar']);
 
         $results = Search::new()
-            ->addWhen(true, Post::class, 'title')
-            ->addWhen(false, Video::class, 'title', 'published_at')
+            ->when(true, fn (Searcher $searcher) => $searcher->add(Post::class, 'title'))
+            ->when(false, fn (Searcher $searcher) => $searcher->add(Video::class, 'title', 'published_at'))
             ->search('foo');
 
         $this->assertCount(1, $results);

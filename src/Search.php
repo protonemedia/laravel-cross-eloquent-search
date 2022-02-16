@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher endWithWildcard(bool $state)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher soundsLike(bool $state)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher add($query, $columns, string $orderByColumn = null)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher addWhen($value, $query, $columns, string $orderByColumn = null)
+ * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher when($value, callable $callback = null, callable $default = null)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher addMany($queries)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher paginate($perPage = 15, $pageName = 'page', $page = null)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher simplePaginate($perPage = 15, $pageName = 'page', $page = null)

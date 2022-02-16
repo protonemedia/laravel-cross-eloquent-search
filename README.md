@@ -85,12 +85,12 @@ Search::addMany([
 ])->search('howto');
 ```
 
-There's also an `addWhen` method, that adds the model when the first argument given to the method evaluates to `true`:
+There's also an `when` method to apply certain clauses based on another condition:
 
 ```php
 Search::new()
-    ->addWhen($user, Post::class, 'title')
-    ->addWhen($user->isAdmin(), Video::class, 'title')
+    ->when($user->isVerified(), fn($search) => $search->add(Post::class, 'title'))
+    ->when($user->isAdmin(), fn($search) => $search->add(Video::class, 'title'))
     ->search('howto');
 ```
 

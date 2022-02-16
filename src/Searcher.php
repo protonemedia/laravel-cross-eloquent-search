@@ -240,24 +240,6 @@ class Searcher
     }
 
     /**
-     * Apply the model if the value is truthy.
-     *
-     * @param mixed $value
-     * @param \Illuminate\Database\Eloquent\Builder|string $query
-     * @param string|array|\Illuminate\Support\Collection $columns
-     * @param string $orderByColumn
-     * @return self
-     */
-    public function addWhen($value, $query, $columns = null, string $orderByColumn = null): self
-    {
-        if (!$value) {
-            return $this;
-        }
-
-        return $this->add($query, $columns, $orderByColumn);
-    }
-
-    /**
      * Loop through the queries and add them.
      *
      * @param mixed $value
