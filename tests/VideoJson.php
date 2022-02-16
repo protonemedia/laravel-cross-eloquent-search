@@ -9,4 +9,9 @@ class VideoJson extends Model
     protected $table = 'videos';
 
     protected $casts = ['title' => 'array'];
+
+    public function searchType()
+    {
+        return 'awesome_video';
+    }
 }

@@ -15,6 +15,7 @@ class CreateTables extends Migration
     {
         Schema::create('posts', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->unsignedInteger('video_id')->nullable();
             $table->string('title');
             $table->date('published_at')->nullable();
             $table->timestamps();
@@ -33,6 +34,36 @@ class CreateTables extends Migration
             $table->string('title');
             $table->string('subtitle')->nullable();
             $table->date('published_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('blogs', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('title');
+            $table->string('subtitle');
+            $table->string('body');
+
+            $table->fullText('title');
+            $table->fullText(['title', 'subtitle']);
+            $table->fullText(['title', 'subtitle', 'body']);
+
+            $table->unsignedInteger('video_id')->nullable();
+
+            $table->timestamps();
+        });
+
+        Schema::create('pages', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('title');
+            $table->string('subtitle')->nullable();
+            $table->string('body')->nullable();
+
+            $table->fullText('title');
+            $table->fullText(['title', 'subtitle']);
+            $table->fullText(['title', 'subtitle', 'body']);
+
+            $table->unsignedInteger('video_id')->nullable();
+
             $table->timestamps();
         });
     }
