@@ -603,6 +603,21 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_includes_a_custom_model_identifier_to_search_results()
+    {
+        Post::create(['title' => 'bar']);
+        Video::create(['title' => 'baz']);
+
+        $search = Search::new()
+            ->add(VideoJson::class, 'title', 'title')
+            ->includeModelType()
+            ->paginate()
+            ->search('ba');
+
+        $this->assertEquals($search->toArray()['data'][0]['type'], 'awesome_video');
+    }
+
+    /** @test */
     public function it_supports_full_text_search()
     {
         $postA = Post::create(['title' => 'Laravel Framework']);
