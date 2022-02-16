@@ -388,7 +388,7 @@ class SearchTest extends TestCase
 
         $results = Search::new()
             ->add(Video::class, ['title', 'posts.title'])
-            ->get();
+            ->search();
 
         $this->assertCount(2, $results);
     }
@@ -634,7 +634,7 @@ class SearchTest extends TestCase
             ->add(Post::class, 'title')
             ->addFullText(Blog::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
             ->addFullText(Page::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
-            ->get('framework -css');
+            ->search('framework -css');
 
         $this->assertCount(4, $results);
 
@@ -658,12 +658,12 @@ class SearchTest extends TestCase
 
         $resultA = Search::addMany([
             [Post::query(), 'title'],
-        ])->get('');
+        ])->search('');
 
         $resultB = Search::addMany([
             [Post::query(), 'title'],
             [Blog::query(), 'title'],
-        ])->get('');
+        ])->search('');
 
         $this->assertCount(2, $resultA);
         $this->assertCount(2, $resultB);
@@ -683,7 +683,7 @@ class SearchTest extends TestCase
 
         $results = Search::add(Post::class, 'title')
             ->when(true, fn (Searcher $searcher) => $searcher->orderByDesc())
-            ->get('foo');
+            ->search('foo');
 
         $this->assertInstanceOf(Collection::class, $results);
         $this->assertCount(2, $results);
