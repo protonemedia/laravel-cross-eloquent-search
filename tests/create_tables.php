@@ -47,18 +47,22 @@ class CreateTables extends Migration
             $table->fullText(['title', 'subtitle']);
             $table->fullText(['title', 'subtitle', 'body']);
 
+            $table->unsignedInteger('video_id')->nullable();
+
             $table->timestamps();
         });
 
         Schema::create('pages', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('title');
-            $table->string('subtitle');
-            $table->string('body');
+            $table->string('subtitle')->nullable();
+            $table->string('body')->nullable();
 
             $table->fullText('title');
             $table->fullText(['title', 'subtitle']);
             $table->fullText(['title', 'subtitle', 'body']);
+
+            $table->unsignedInteger('video_id')->nullable();
 
             $table->timestamps();
         });

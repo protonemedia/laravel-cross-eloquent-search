@@ -23,6 +23,7 @@ Hey! We've built a Docker-based deployment tool to launch apps and sites fully c
 * Support for cross-model [pagination](https://laravel.com/docs/master/pagination#introduction).
 * Search through single or multiple columns.
 * Search through (nested) relationships.
+* Support for Full-Text Search, even through relationships.
 * Order by (cross-model) columns or by relevance.
 * Use [constraints](https://laravel.com/docs/master/eloquent#retrieving-models) and [scoped queries](https://laravel.com/docs/master/eloquent#query-scopes).
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
@@ -47,7 +48,13 @@ You can install the package via composer:
 composer require protonemedia/laravel-cross-eloquent-search
 ```
 
-## Upgrading from v1
+## Upgrading from v2 to v3
+
+* The `get` method has been renamed to `search`.
+* The `addWhen` method has been removed in favor of [`when`](#usage).
+* By default, the results are sorted by the *updated* column, which is the `updated_at` column in most cases. If you don't use timestamps, it will now use the primary key by default.
+
+## Upgrading from v1 to v2
 
 * The `startWithWildcard` method has been renamed to `beginWithWildcard`.
 * The default order column is now evaluated by the `getUpdatedAtColumn` method. Previously it was hard-coded to `updated_at`. You still can use [another column](#sorting) to order by.
@@ -55,16 +62,16 @@ composer require protonemedia/laravel-cross-eloquent-search
 
 ## Usage
 
-Start your search query by adding one or more models to search through. Call the `add` method with the model's class name and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.
+Start your search query by adding one or more models to search through. Call the `add` method with the model's class name and the column you want to search through. Then call the `search` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.
 
-The results are sorted in ascending order by the *updated* column by default. In most cases, this column is `updated_at`. If you've [customized](https://laravel.com/docs/master/eloquent#timestamps) your model's `UPDATED_AT` constant, or overwritten the `getUpdatedAtColumn` method, this package will use the customized column. Of course, you can [order by another column](#sorting) as well.
+The results are sorted in ascending order by the *updated* column by default. In most cases, this column is `updated_at`. If you've [customized](https://laravel.com/docs/master/eloquent#timestamps) your model's `UPDATED_AT` constant, or overwritten the `getUpdatedAtColumn` method, this package will use the customized column. If you don't use timestamps at all, it will use the primary key by default. Of course, you can [order by another column](#sorting) as well.
 
 ```php
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 
 $results = Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->get('howto');
+    ->search('howto');
 ```
 
 If you care about indentation, you can optionally use the `new` method on the facade:
@@ -73,7 +80,7 @@ If you care about indentation, you can optionally use the `new` method on the fa
 Search::new()
     ->add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->get('howto');
+    ->search('howto');
 ```
 
 You can add multiple models at once by using the `addMany` method:
@@ -82,16 +89,16 @@ You can add multiple models at once by using the `addMany` method:
 Search::addMany([
     [Post::class, 'title'],
     [Video::class, 'title'],
-])->get('howto');
+])->search('howto');
 ```
 
-There's also an `addWhen` method, that adds the model when the first argument given to the method evaluates to `true`:
+There's also an `when` method to apply certain clauses based on another condition:
 
 ```php
 Search::new()
-    ->addWhen($user, Post::class, 'title')
-    ->addWhen($user->isAdmin(), Video::class, 'title')
-    ->get('howto');
+    ->when($user->isVerified(), fn($search) => $search->add(Post::class, 'title'))
+    ->when($user->isAdmin(), fn($search) => $search->add(Video::class, 'title'))
+    ->search('howto');
 ```
 
 ### Wildcards
@@ -102,7 +109,7 @@ By default, we split up the search term, and each keyword will get a wildcard sy
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->beginWithWildcard()
-    ->get('os');
+    ->search('os');
 ```
 
 *Note: in previous versions of this package, this method was called `startWithWildcard()`.*
@@ -114,7 +121,7 @@ Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->beginWithWildcard()
     ->endWithWildcard(false)
-    ->get('os');
+    ->search('os');
 ```
 
 ### Multi-word search
@@ -124,7 +131,7 @@ Multi-word search is supported out of the box. Simply wrap your phrase into doub
 ```php
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
-    ->get('"macos big sur"');
+    ->search('"macos big sur"');
 ```
 
 You can disable the parsing of the search term by calling the `dontParseTerm` method, which gives you the same results as using double-quotes.
@@ -133,7 +140,7 @@ You can disable the parsing of the search term by calling the `dontParseTerm` me
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->dontParseTerm()
-    ->get('macos big sur');
+    ->search('macos big sur');
 ```
 
 ### Sorting
@@ -144,7 +151,7 @@ If you want to sort the results by another column, you can pass that column to t
 Search::add(Post::class, 'title', 'published_at')
     ->add(Video::class, 'title', 'released_at')
     ->orderByDesc()
-    ->get('learn');
+    ->search('learn');
 ```
 
 You can call the `orderByRelevance` method to sort the results by the number of occurrences of the search terms. Imagine these two sentences:
@@ -158,7 +165,7 @@ If you search for *Apple iPad*, the second sentence will come up first, as there
 Search::add(Post::class, 'title')
     ->beginWithWildcard()
     ->orderByRelevance()
-    ->get('Apple iPad');
+    ->search('Apple iPad');
 ```
 
 Ordering by relevance is *not* supported if you're searching through (nested) relationships.
@@ -173,12 +180,12 @@ Search::new()
     ->orderByModel([
         Post::class, Video::class, Comment::class,
     ])
-    ->get('Artisan School');
+    ->search('Artisan School');
 ```
 
 ### Pagination
 
-We highly recommend paginating your results. Call the `paginate` method before the `get` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
+We highly recommend paginating your results. Call the `paginate` method before the `search` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
 
 ```php
 Search::add(Post::class, 'title')
@@ -188,7 +195,7 @@ Search::add(Post::class, 'title')
     // or
     ->paginate($perPage = 15, $pageName = 'page', $page = 1)
 
-    ->get('build');
+    ->search('build');
 ```
 
 You may also use [simple pagination](https://laravel.com/docs/master/pagination#simple-pagination). This will return an instance of `\Illuminate\Contracts\Pagination\Paginator`, which is not length aware:
@@ -201,7 +208,7 @@ Search::add(Post::class, 'title')
     // or
     ->simplePaginate($perPage = 15, $pageName = 'page', $page = 1)
 
-    ->get('build');
+    ->search('build');
 ```
 
 ### Constraints and scoped queries
@@ -211,7 +218,7 @@ Instead of the class name, you can also pass an instance of the [Eloquent query 
 ```php
 Search::add(Post::published(), 'title')
     ->add(Video::where('views', '>', 2500), 'title')
-    ->get('compile');
+    ->search('compile');
 ```
 
 ### Multiple columns per model
@@ -221,7 +228,7 @@ You can search through multiple columns by passing an array of columns as the se
 ```php
 Search::add(Post::class, ['title', 'body'])
     ->add(Video::class, ['title', 'subtitle'])
-    ->get('eloquent');
+    ->search('eloquent');
 ```
 
 ### Search through (nested) relationships
@@ -231,7 +238,30 @@ You can search through (nested) relationships by using the *dot* notation:
 ```php
 Search::add(Post::class, ['comments.body'])
     ->add(Video::class, ['posts.user.biography'])
-    ->get('solution');
+    ->search('solution');
+```
+
+### Full-Text Search
+
+You may use [MySQL's Full-Text Search](https://laravel.com/docs/master/queries#full-text-where-clauses) by using the `addFullText` method. You can search through a single or multiple columns (using [full text indexes](https://laravel.com/docs/master/migrations#available-index-types)), and you can specify a set of options, for example, to specify the mode. You can even regular and full-text searches in one query:
+
+```php
+Search::new()
+    ->add(Post::class, 'title')
+    ->addFullText(Video::class, 'title', ['mode' => 'boolean'])
+    ->addFullText(Blog::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
+    ->search('framework -css');
+```
+
+If you want to search through relationships, you need to pass in an array where the array key contains the relation, while the value is an array of columns:
+
+```php
+Search::new()
+    ->addFullText(Page::class, [
+        'posts' => ['title', 'body'],
+        'sections' => ['title', 'subtitle', 'body'],
+    ], )
+    ->search('framework -css');
 ```
 
 ### Sounds like
@@ -243,7 +273,7 @@ Search::new()
     ->add(Post::class, 'framework')
     ->add(Video::class, 'framework')
     ->soundsLike()
-    ->get('larafel');
+    ->search('larafel');
 ```
 
 ### Eager load relationships
@@ -253,19 +283,19 @@ Not much to explain here, but this is supported as well :)
 ```php
 Search::add(Post::with('comments'), 'title')
     ->add(Video::with('likes'), 'title')
-    ->get('guitar');
+    ->search('guitar');
 ```
 
 ### Getting results without searching
 
-You call the `get` method without a term or with an empty term. In this case, you can discard the second argument of the `add` method. With the `orderBy` method, you can set the column to sort by (previously the third argument):
+You call the `search` method without a term or with an empty term. In this case, you can discard the second argument of the `add` method. With the `orderBy` method, you can set the column to sort by (previously the third argument):
 
 ```php
 Search::add(Post::class)
     ->orderBy('published_at')
     ->add(Video::class)
     ->orderBy('released_at')
-    ->get();
+    ->search();
 ```
 
 ### Counting records
@@ -287,7 +317,7 @@ Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->includeModelType()
     ->paginate()
-    ->get('foo');
+    ->search('foo');
 
 // Example result with model identifier.
 {
@@ -318,9 +348,32 @@ Search::add(Post::class, 'title')
 
 By default, it uses the `type` key, but you can customize this by passing the key to the method.
 
+You can also customize the `type` value by adding a public method `searchType()` to your model to override the default class base name.
+
 ```php
-Search::new()
-    ->includeModelType('model_type');
+class Video extends Model
+{
+    public function searchType()
+    {
+        return 'awesome_video';
+    }
+}
+
+// Example result with searchType() method.
+{
+    "current_page": 1,
+    "data": [
+        {
+            "id": 1,
+            "video_id": null,
+            "title": "foo",
+            "published_at": null,
+            "created_at": "2021-12-03T09:39:10.000000Z",
+            "updated_at": "2021-12-03T09:39:10.000000Z",
+            "type": "awesome_video",
+        }
+    ],
+    ...
 ```
 
 ### Standalone parser
