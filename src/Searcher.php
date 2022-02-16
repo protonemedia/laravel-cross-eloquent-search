@@ -748,7 +748,7 @@ class Searcher
      * @param string $terms
      * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function get(string $terms = null)
+    public function search(string $terms = null)
     {
         $this->initializeTerms($terms ?: '');
 
