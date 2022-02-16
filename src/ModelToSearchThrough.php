@@ -242,11 +242,9 @@ class ModelToSearchThrough
         $collection = Collection::make();
 
         foreach ($this->columns as $relation => $columns) {
-            if (is_string($relation)) {
-                $collection->push(
-                    $this->clone()->setColumns(Collection::wrap($columns))->setFullTextRelation($relation)
-                );
-            }
+            $collection->push(
+                $this->clone()->setColumns(Collection::wrap($columns))->setFullTextRelation($relation)
+            );
         }
 
         return $collection;

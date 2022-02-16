@@ -23,6 +23,7 @@ Hey! We've built a Docker-based deployment tool to launch apps and sites fully c
 * Support for cross-model [pagination](https://laravel.com/docs/master/pagination#introduction).
 * Search through single or multiple columns.
 * Search through (nested) relationships.
+* Support for Full-Text Search, even through relationships.
 * Order by (cross-model) columns or by relevance.
 * Use [constraints](https://laravel.com/docs/master/eloquent#retrieving-models) and [scoped queries](https://laravel.com/docs/master/eloquent#query-scopes).
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
@@ -61,7 +62,7 @@ composer require protonemedia/laravel-cross-eloquent-search
 
 ## Usage
 
-Start your search query by adding one or more models to search through. Call the `add` method with the model's class name and the column you want to search through. Then call the `get` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.
+Start your search query by adding one or more models to search through. Call the `add` method with the model's class name and the column you want to search through. Then call the `search` method with the search term, and you'll get a `\Illuminate\Database\Eloquent\Collection` instance with the results.
 
 The results are sorted in ascending order by the *updated* column by default. In most cases, this column is `updated_at`. If you've [customized](https://laravel.com/docs/master/eloquent#timestamps) your model's `UPDATED_AT` constant, or overwritten the `getUpdatedAtColumn` method, this package will use the customized column. If you don't use timestamps at all, it will use the primary key by default. Of course, you can [order by another column](#sorting) as well.
 
@@ -184,7 +185,7 @@ Search::new()
 
 ### Pagination
 
-We highly recommend paginating your results. Call the `paginate` method before the `get` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
+We highly recommend paginating your results. Call the `paginate` method before the `search` method, and you'll get an instance of `\Illuminate\Contracts\Pagination\LengthAwarePaginator` as a result. The `paginate` method takes three (optional) parameters to customize the paginator. These arguments are [the same](https://laravel.com/docs/master/pagination#introduction) as Laravel's database paginator.
 
 ```php
 Search::add(Post::class, 'title')
@@ -240,6 +241,29 @@ Search::add(Post::class, ['comments.body'])
     ->search('solution');
 ```
 
+### Full-Text Search
+
+You may use [MySQL's Full-Text Search](https://laravel.com/docs/master/queries#full-text-where-clauses) by using the `addFullText` method. You can search through a single or multiple columns (using [full text indexes](https://laravel.com/docs/master/migrations#available-index-types)), and you can specify a set of options, for example, to specify the mode. You can even regular and full-text searches in one query:
+
+```php
+Search::new()
+    ->add(Post::class, 'title')
+    ->addFullText(Video::class, 'title', ['mode' => 'boolean'])
+    ->addFullText(Blog::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
+    ->search('framework -css');
+```
+
+If you want to search through relationships, you need to pass in an array where the array key contains the relation, while the value is an array of columns:
+
+```php
+Search::new()
+    ->addFullText(Page::class, [
+        'posts' => ['title', 'body'],
+        'sections' => ['title', 'subtitle', 'body'],
+    ], )
+    ->search('framework -css');
+```
+
 ### Sounds like
 
 MySQL has a *soundex* algorithm built-in so you can search for terms that sound almost the same. You can use this feature by calling the `soundsLike` method:
@@ -264,7 +288,7 @@ Search::add(Post::with('comments'), 'title')
 
 ### Getting results without searching
 
-You call the `get` method without a term or with an empty term. In this case, you can discard the second argument of the `add` method. With the `orderBy` method, you can set the column to sort by (previously the third argument):
+You call the `search` method without a term or with an empty term. In this case, you can discard the second argument of the `add` method. With the `orderBy` method, you can set the column to sort by (previously the third argument):
 
 ```php
 Search::add(Post::class)

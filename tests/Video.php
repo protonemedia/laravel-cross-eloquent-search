@@ -10,4 +10,14 @@ class Video extends Model
     {
         return $this->hasMany(Post::class);
     }
+
+    public function blogs()
+    {
+        return $this->hasMany(Blog::class);
+    }
+
+    public function pages()
+    {
+        return $this->hasMany(Page::class);
+    }
 }

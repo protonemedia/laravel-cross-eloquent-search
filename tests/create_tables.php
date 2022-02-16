@@ -47,7 +47,7 @@ class CreateTables extends Migration
             $table->fullText(['title', 'subtitle']);
             $table->fullText(['title', 'subtitle', 'body']);
 
-            $table->unsignedInteger('page_id')->nullable();
+            $table->unsignedInteger('video_id')->nullable();
 
             $table->timestamps();
         });
@@ -61,6 +61,8 @@ class CreateTables extends Migration
             $table->fullText('title');
             $table->fullText(['title', 'subtitle']);
             $table->fullText(['title', 'subtitle', 'body']);
+
+            $table->unsignedInteger('video_id')->nullable();
 
             $table->timestamps();
         });
