@@ -83,15 +83,6 @@ Search::new()
     ->search('howto');
 ```
 
-You can add multiple models at once by using the `addMany` method:
-
-```php
-Search::addMany([
-    [Post::class, 'title'],
-    [Video::class, 'title'],
-])->search('howto');
-```
-
 There's also an `when` method to apply certain clauses based on another condition:
 
 ```php
