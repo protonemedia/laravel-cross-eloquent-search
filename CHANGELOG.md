@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-cross-eloquent-search` will be documented in this file
 
+## 3.0.0 - 2022-02-16
+
+* Support for Full-Text Search.
+* The `get` method has been renamed to `search`.
+* The `addWhen` method has been removed in favor of `when`.
+* Support for custom *type* values when using the `includeModelType` method.
+* By default, the results are sorted by the *updated* column, which is the `updated_at` column in most cases. If you don't use timestamps, it will now use the primary key by default.
+
 ## 2.7.1 - 2022-02-10
 
 - Add Conditionable trait to Searcher (thanks @Daanra!)
