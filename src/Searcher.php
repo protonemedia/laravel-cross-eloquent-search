@@ -775,8 +775,8 @@ class Searcher
             $model = $modelsPerType->get($modelKey)->get($item->$modelKey);
 
             if ($this->includeModelTypeWithKey) {
-                $searchType = property_exists($model, 'searchType') ? $model->searchType : class_basename($model);
-                   
+                $searchType = method_exists($model, 'searchType') ? $model->searchType() : class_basename($model);
+
                 $model->setAttribute($this->includeModelTypeWithKey, $searchType);
             }
 

@@ -603,6 +603,21 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_includes_a_custom_model_identifier_to_search_results()
+    {
+        Post::create(['title' => 'bar']);
+        Video::create(['title' => 'baz']);
+
+        $search = Search::new()
+            ->add(VideoJson::class, 'title', 'title')
+            ->includeModelType()
+            ->paginate()
+            ->search('ba');
+
+        $this->assertEquals($search->toArray()['data'][0]['type'], 'awesome_video');
+    }
+
+    /** @test */
     public function it_supports_full_text_search()
     {
         $postA = Post::create(['title' => 'Laravel Framework']);
@@ -630,7 +645,8 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_returns_data_consistently() {
+    public function it_returns_data_consistently()
+    {
         Carbon::setTestNow(now());
         $postA = Post::create(['title' => 'Laravel Framework']);
 
@@ -648,9 +664,9 @@ class SearchTest extends TestCase
             [Post::query(), 'title'],
             [Blog::query(), 'title'],
         ])->get('');
-        
+
         $this->assertCount(2, $resultA);
-        $this->assertCount(2, $resultB);    
+        $this->assertCount(2, $resultB);
 
         $this->assertTrue($resultA->first()->is($postA));
         $this->assertTrue($resultB->first()->is($postA));
