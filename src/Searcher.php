@@ -509,12 +509,23 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
+        $lengthFunctionName = (
+            $this->isCurrentConnectionSqlite()
+                ? 'LENGTH'
+                : 'CHAR_LENGTH'
+        );
+
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) {
             $field = (new MySqlGrammar)->wrap($field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+
                 return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
+                    'expression' => sprintf(
+                        'COALESCE(%1$s(LOWER(%2$s)) - %1$s(REPLACE(LOWER(%2$s), ?, ?)), 0)',
+                        $lengthFunctionName,
+                        $field
+                    ),
                     'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
@@ -574,7 +585,7 @@ class Searcher
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
 
-        return "COALESCE({$modelOrderKeys})";
+        return "COALESCE({$modelOrderKeys}, NULL)";
     }
 
     /**
@@ -587,7 +598,7 @@ class Searcher
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
 
-        return "COALESCE({$modelOrderKeys})";
+        return "COALESCE({$modelOrderKeys}, NULL)";
     }
 
     /**
@@ -775,5 +786,20 @@ class Searcher
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
+    }
+
+    /**
+     * @return string Returns current connection driver as string
+     */
+    private function getCurrentConnectionDriver(): string {
+        $connection = config('database.default');
+        return config("database.connections.{$connection}.driver");
+    }
+
+    /**
+     * @return bool Returns true if the current connection driver is SQLite, otherwise false.
+     */
+    private function isCurrentConnectionSqlite(): bool {
+        return $this->getCurrentConnectionDriver() === 'sqlite';
     }
 }
