@@ -515,10 +515,10 @@ class Searcher
                 : 'CHAR_LENGTH'
         );
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) {
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($lengthFunctionName) {
             $field = (new MySqlGrammar)->wrap($field);
 
-            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+            return $this->termsWithoutWildcards->map(function ($term) use ($field, $lengthFunctionName) {
 
                 return [
                     'expression' => sprintf(
