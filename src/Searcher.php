@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
+use Illuminate\Database\SQLiteConnection;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -509,24 +510,19 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $lengthFunctionName = (
-            $this->isCurrentConnectionSqlite()
-                ? 'LENGTH'
-                : 'CHAR_LENGTH'
-        );
+        $lengthFunctionName = $this->usesSQLiteConnection() ? 'LENGTH' : 'CHAR_LENGTH';
 
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($lengthFunctionName) {
             $field = (new MySqlGrammar)->wrap($field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field, $lengthFunctionName) {
-
                 return [
                     'expression' => sprintf(
                         'COALESCE(%1$s(LOWER(%2$s)) - %1$s(REPLACE(LOWER(%2$s), ?, ?)), 0)',
                         $lengthFunctionName,
                         $field
                     ),
-                    'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
+                    'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
         });
@@ -789,17 +785,12 @@ class Searcher
     }
 
     /**
-     * @return string Returns current connection driver as string
+     * Returns true if the current connection driver is SQLite, otherwise false.
+     *
+     * @return bool
      */
-    private function getCurrentConnectionDriver(): string {
-        $connection = config('database.default');
-        return config("database.connections.{$connection}.driver");
-    }
-
-    /**
-     * @return bool Returns true if the current connection driver is SQLite, otherwise false.
-     */
-    private function isCurrentConnectionSqlite(): bool {
-        return $this->getCurrentConnectionDriver() === 'sqlite';
+    private function usesSQLiteConnection(): bool
+    {
+        return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof SQLiteConnection;
     }
 }
