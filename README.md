@@ -7,9 +7,15 @@
 
 This Laravel package allows you to search through multiple Eloquent models. It supports sorting, pagination, scoped queries, eager load relationships, and searching through single or multiple columns.
 
-## Launcher 🚀
+## Support this package!
 
-Hey! We've built a Docker-based deployment tool to launch apps and sites fully containerized. You can find all features and the roadmap on our [website](https://uselauncher.com), and we are on [Twitter](https://twitter.com/uselauncher) as well!
+❤️ We proudly support the community by developing Laravel packages and giving them away for free. If this package saves you time or if you're relying on it professionally, please consider [sponsoring the maintenance and development](https://github.com/sponsors/pascalbaljet). Keeping track of issues and pull requests takes time, but we're happy to help!
+
+## Laravel Splade
+
+**Did you hear about Laravel Splade? 🤩**
+
+It's the *magic* of Inertia.js with the *simplicity* of Blade. [Splade](https://github.com/protonemedia/laravel-splade) provides a super easy way to build Single Page Applications using Blade templates. Besides that magic SPA-feeling, it comes with more than ten components to sparkle your app and make it interactive, all without ever leaving Blade.
 
 ## Requirements
 
@@ -35,10 +41,6 @@ Hey! We've built a Docker-based deployment tool to launch apps and sites fully c
 ## Blog post
 
 If you want to know more about this package's background, please read [the blog post](https://protone.media/blog/search-through-multiple-eloquent-models-with-our-latest-laravel-package).
-
-## Support
-
-We proudly support the community by developing Laravel packages and giving them away for free. Keeping track of issues and pull requests takes time, but we're happy to help! If this package saves you time or if you're relying on it professionally, please consider [supporting the maintenance and development](https://github.com/sponsors/pascalbaljet).
 
 ## Installation
 
