@@ -138,7 +138,8 @@ class ModelToSearchThrough
      */
     public function getModelKey($suffix = 'key'): string
     {
-        return implode('_', [
+        // prefix with _ for SQLite support
+        return '_' . implode('_', [
             $this->key,
             Str::snake(class_basename($this->getModel())),
             $suffix,

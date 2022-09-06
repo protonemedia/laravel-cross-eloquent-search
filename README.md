@@ -20,7 +20,7 @@ It's the *magic* of Inertia.js with the *simplicity* of Blade. [Splade](https://
 ## Requirements
 
 * PHP 8.0 + 8.1
-* MySQL 5.7+
+* MySQL 5.7+ / SQLite3
 * Laravel 8.0 or 9.0
 
 ## Features
