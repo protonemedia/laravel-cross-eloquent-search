@@ -509,10 +509,9 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use($modelToSearchThrough) {
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
             $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
-            $field = $prefix . $field;
-            $field = (new MySqlGrammar)->wrap($field);
+            $field = (new MySqlGrammar)->wrap($prefix . $field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
                 return [
