@@ -600,7 +600,9 @@ class Searcher
             throw OrderByRelevanceException::make();
         }
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) {
+
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
+            $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
             $field = $this->grammar->wrap($field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
