@@ -204,6 +204,25 @@ Search::add(Post::class, 'title')
     ->search('build');
 ```
 
+### Offset and limit
+
+You may get a range window by calling the `limit` method before the `search` method, and manipulate the range window with the `offset` method, and you'll get an instance of `\Illuminate\Database\Eloquent\Collection` as a result.
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+
+    // limit result data records 
+    ->limit($limit)
+
+    // skip result data records
+    ->offset($offset)
+
+    ->search('build');
+```
+
+When using the `limit` method or the `offset` method with the `paginate` method or the `simplePaginate` method throws an exception.
+
 ### Constraints and scoped queries
 
 Instead of the class name, you can also pass an instance of the [Eloquent query builder](https://laravel.com/docs/master/eloquent#retrieving-models) to the `add` method. This allows you to add constraints to each model.

@@ -6,7 +6,10 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\LimitAlreadyPassedException;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OffsetAlreadyPassedException;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OrderByRelevanceException;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\PaginateAlreadyPassedException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
 
@@ -717,5 +720,119 @@ class SearchTest extends TestCase
 
         $this->assertTrue($results->first()->is($postA));
         $this->assertTrue($results->last()->is($postB));
+    }
+
+    /** @test */
+    public function it_throws_exception_if_use_limit_ot_offset_before_paginate_or_simple_paginate()
+    {
+        Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+        Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        Video::create(['title' => 'foo', 'published_at' => now()]);
+        Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $query = Search::new()
+            ->add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc();
+
+        $this->assertThrows(function () use ($query) {
+            (clone $query)
+                ->offset(1)
+                ->paginate();
+        }, OffsetAlreadyPassedException::class);
+
+        $this->assertThrows(function () use ($query) {
+            (clone $query)
+                ->offset(1)
+                ->paginate();
+        }, OffsetAlreadyPassedException::class);
+
+        $this->assertThrows(function () use ($query) {
+            (clone $query)
+                ->limit(1)
+                ->simplePaginate();
+        }, LimitAlreadyPassedException::class);
+
+        $this->assertThrows(function () use ($query) {
+            (clone $query)
+                ->limit(1)
+                ->simplePaginate();
+        }, LimitAlreadyPassedException::class);
+    }
+
+    /** @test */
+    public function it_throws_exception_use_paginate_or_simple_paginate_before_limit_ot_offset()
+    {
+        Post::create(['title' => 'foo', 'published_at' => now()->addDay()]);
+        Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        Video::create(['title' => 'foo', 'published_at' => now()]);
+        Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $query = Search::new()
+            ->add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc();
+
+        $this->assertThrows(function () use ($query) {
+            (clone $query)
+                ->paginate()
+                ->offset(1);
+        }, PaginateAlreadyPassedException::class);
+
+        $this->assertThrows(function () use ($query) {
+            (clone $query)
+                ->paginate()
+                ->offset(1);
+        }, PaginateAlreadyPassedException::class);
+
+        $this->assertThrows(function () use ($query) {
+            (clone $query)
+                ->simplePaginate()
+                ->limit(1);
+        }, PaginateAlreadyPassedException::class);
+
+        $this->assertThrows(function () use ($query) {
+            (clone $query)
+                ->simplePaginate()
+                ->limit(1);
+        }, PaginateAlreadyPassedException::class);
+    }
+
+    public function it_can_limits_returned_data()
+    {
+        Post::create(['title' => 'foo', 'published_at' => now()->addDay()]);
+        $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        Video::create(['title' => 'foo', 'published_at' => now()]);
+        $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $results = Search::new()
+            ->add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc()
+            ->limit(2)
+            ->search('foo');
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results->contains($videoB));
+        $this->assertTrue($results->contains($postB));
+    }
+
+    public function it_can_offset_returned_data()
+    {
+        $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDay()]);
+        Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
+        Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $results = Search::new()
+            ->add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc()
+            ->offset(2)
+            ->search('foo');
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results->contains($postA));
+        $this->assertTrue($results->contains($videoA));
     }
 }

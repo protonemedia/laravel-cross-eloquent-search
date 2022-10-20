@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
@@ -15,7 +17,7 @@ class SearchFactory
      */
     public function new(): Searcher
     {
-        return new Searcher;
+        return new Searcher();
     }
 
     /**
