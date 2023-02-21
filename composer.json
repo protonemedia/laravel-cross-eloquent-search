@@ -16,14 +16,14 @@
         }
     ],
     "require": {
-        "php": "^8.1",
-        "illuminate/support": "^10.0",
+        "php": "^8.1|^8.2",
+        "illuminate/support": "^9.0|^10.0",
         "nesbot/carbon": "^2.66"
     },
     "require-dev": {
         "mockery/mockery": "^1.4.4",
-        "orchestra/testbench": "^8.0",
-        "phpunit/phpunit": "^9.5.10"
+        "orchestra/testbench": "^7.0|^8.0",
+        "phpunit/phpunit": "^9.5"
     },
     "autoload": {
         "psr-4": {
