@@ -703,7 +703,7 @@ class Searcher
                 $ids = $results->pluck($key)->filter();
 
                 return $ids->isNotEmpty()
-                    ? $modelToSearchThrough->getFreshBuilder()->whereKey($ids)->get()->keyBy->getKey()
+                    ? $modelToSearchThrough->getModel()->newQueryWithoutScopes()->whereKey($ids)->get()->keyBy->getKey()
                     : null;
             });
 
