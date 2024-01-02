@@ -19,9 +19,9 @@ It's the *magic* of Inertia.js with the *simplicity* of Blade. [Splade](https://
 
 ## Requirements
 
-* PHP 8.0 + 8.1 + 8.2
+* PHP 8.1 or higher
 * MySQL 8.0+
-* Laravel 9.0+
+* Laravel 10.0+
 
 ## Features
 
