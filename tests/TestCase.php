@@ -50,6 +50,8 @@ class TestCase extends OrchestraTestCase
             ]) : [],
         ]);
 
+        DB::setDefaultConnection('mysql');
+
         $this->artisan('migrate:fresh');
 
         include_once __DIR__ . '/create_tables.php';
