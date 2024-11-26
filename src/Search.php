@@ -1,25 +1,33 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher new()
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher orderByAsc()
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher orderByDesc()
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher dontParseTerm()
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher includeModelType()
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher beginWithWildcard(bool $state)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher endWithWildcard(bool $state)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher soundsLike(bool $state)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher add($query, $columns, string $orderByColumn = null)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher when($value, callable $callback = null, callable $default = null)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher addMany($queries)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher paginate($perPage = 15, $pageName = 'page', $page = null)
- * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher simplePaginate($perPage = 15, $pageName = 'page', $page = null)
- * @method static \Illuminate\Support\Collection parseTerms(string $terms, callable $callback = null)
- * @method static \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator get(string $terms = null)
+ * @method static Searcher new()
+ * @method static Searcher orderByAsc()
+ * @method static Searcher orderByDesc()
+ * @method static Searcher dontParseTerm()
+ * @method static Searcher includeModelType()
+ * @method static Searcher beginWithWildcard(bool $state)
+ * @method static Searcher endWithWildcard(bool $state)
+ * @method static Searcher soundsLike(bool $state)
+ * @method static Searcher offset(int $offset)
+ * @method static Searcher limit(int $limit)
+ * @method static Searcher when($value, callable $callback = null, callable $default = null)
+ * @method static Searcher add(Builder|string $query, iterable|string|Collection $columns = null, null|string $orderByColumn = null)
+ * @method static Searcher addMany(iterable $queries)
+ * @method static Searcher paginate(int $perPage = 15, string $pageName = 'page', null|int $page = null)
+ * @method static Searcher simplePaginate(int $perPage = 15, string $pageName = 'page', null|int $page = null)
+ * @method static Collection parseTerms(string $terms, null|callable $callback = null)
+ * @method static EloquentCollection|LengthAwarePaginator get(null|string $terms = null)
  *
  * @see \ProtoneMedia\LaravelCrossEloquentSearch\Searcher
  */

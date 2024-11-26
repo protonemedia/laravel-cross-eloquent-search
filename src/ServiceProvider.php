@@ -12,7 +12,7 @@ class ServiceProvider extends BaseServiceProvider
     public function register()
     {
         $this->app->singleton('laravel-cross-eloquent-search', function () {
-            return new SearchFactory;
+            return new SearchFactory();
         });
     }
 }

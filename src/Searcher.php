@@ -1,7 +1,10 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +17,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\LimitAlreadyPassedException;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OffsetAlreadyPassedException;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\PaginateAlreadyPassedException;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OrderByRelevanceException;
 
 class Searcher
 {
@@ -32,7 +39,7 @@ class Searcher
     /**
      * Sort by model.
      */
-    protected ?array $orderByModel = null;
+    protected null|array $orderByModel = null;
 
     /**
      * Begin the search term with a wildcard.
@@ -62,7 +69,7 @@ class Searcher
     /**
      * Raw input.
      */
-    protected ?string $rawTerms = null;
+    protected null|string $rawTerms = null;
 
     /**
      * Collection of search terms.
@@ -75,14 +82,19 @@ class Searcher
     protected Collection $termsWithoutWildcards;
 
     /**
-     * The number of items to be shown per page.
+     * The number of items to be shown.
      */
-    protected int $perPage = 15;
+    protected null|int $limit = null;
+
+    /**
+     * The number of items to be skipped.
+     */
+    protected null|int $offset = null;
 
     /**
      * The query string variable used to store the page.
      */
-    protected string $pageName = '';
+    protected null|string $pageName = null;
 
     /**
      * Parse the search term into multiple terms.
@@ -95,23 +107,40 @@ class Searcher
     protected bool $simplePaginate = false;
 
     /**
+     * If used simplePaginate or paginate equals true
+     * If used limit or offset equals false
+     * Else equals null
+     *
+     * @var bool|null
+     */
+    protected null|bool $isPaginate = null;
+
+    /**
      * Current page.
      *
      * @var int|null
      */
-    protected $page;
+    protected null|int $page = null;
 
     /**
      * Include the model type in the search results.
      */
-    protected ?string $includeModelTypeWithKey = null;
+    protected null|string $includeModelTypeWithKey = null;
+
+    /**
+     * Uses for wrap raw fields.
+     *
+     * @var MySqlGrammar
+     */
+    protected MySqlGrammar $grammar;
 
     /**
      * Initialises the instanace with a fresh Collection and default sort.
      */
     public function __construct()
     {
-        $this->modelsToSearchThrough = new Collection;
+        $this->modelsToSearchThrough = new Collection();
+        $this->grammar = new MySqlGrammar();
 
         $this->orderByAsc();
     }
@@ -119,9 +148,9 @@ class Searcher
     /**
      * Sort the results in ascending order.
      *
-     * @return self
+     * @return $this
      */
-    public function orderByAsc(): self
+    public function orderByAsc(): static
     {
         $this->orderByDirection = 'asc';
 
@@ -131,9 +160,9 @@ class Searcher
     /**
      * Sort the results in descending order.
      *
-     * @return self
+     * @return $this
      */
-    public function orderByDesc(): self
+    public function orderByDesc(): static
     {
         $this->orderByDirection = 'desc';
 
@@ -143,9 +172,9 @@ class Searcher
     /**
      * Sort the results in relevance order.
      *
-     * @return self
+     * @return $this
      */
-    public function orderByRelevance(): self
+    public function orderByRelevance(): static
     {
         $this->orderByDirection = 'relevance';
 
@@ -155,9 +184,10 @@ class Searcher
     /**
      * Sort the results in order of the given models.
      *
-     * @return self
+     * @param iterable|string $modelClasses
+     * @return $this
      */
-    public function orderByModel($modelClasses): self
+    public function orderByModel(iterable|string $modelClasses): static
     {
         $this->orderByModel = Arr::wrap($modelClasses);
 
@@ -166,8 +196,9 @@ class Searcher
 
     /**
      * Disable the parsing of the search term.
+     * @return $this
      */
-    public function dontParseTerm(): self
+    public function dontParseTerm(): static
     {
         $this->parseTerm = false;
 
@@ -178,9 +209,9 @@ class Searcher
      * Enable the inclusion of the model type in the search results.
      *
      * @param string $key
-     * @return self
+     * @return $this
      */
-    public function includeModelType(string $key = 'type'): self
+    public function includeModelType(string $key = 'type'): static
     {
         $this->includeModelTypeWithKey = $key;
 
@@ -190,13 +221,12 @@ class Searcher
     /**
      * Add a model to search through.
      *
-     * @param \Illuminate\Database\Eloquent\Builder|string $query
-     * @param string|array|\Illuminate\Support\Collection $columns
-     * @param string $orderByColumn
-     * @param bool $fullText
-     * @return self
+     * @param class-string|Builder $query
+     * @param iterable|string|Collection|null $columns
+     * @param null|string $orderByColumn
+     * @return $this
      */
-    public function add($query, $columns = null, string $orderByColumn = null): self
+    public function add(Builder|string $query, iterable|string|Collection $columns = null, null|string $orderByColumn = null): static
     {
         /** @var Builder $builder */
         $builder = is_string($query) ? $query::query() : $query;
@@ -221,7 +251,14 @@ class Searcher
         return $this;
     }
 
-    public function addFullText($query, $columns = null, array $options = [], string $orderByColumn = null): self
+    /**
+     * @param class-string|Builder $query
+     * @param iterable|string|Collection|null $columns
+     * @param array $options
+     * @param string|null $orderByColumn
+     * @return $this
+     */
+    public function addFullText(Builder|string $query, iterable|string|Collection $columns = null, array $options = [], null|string $orderByColumn = null): static
     {
         $builder = is_string($query) ? $query::query() : $query;
 
@@ -242,10 +279,10 @@ class Searcher
     /**
      * Loop through the queries and add them.
      *
-     * @param mixed $value
-     * @return self
+     * @param iterable $queries
+     * @return $this
      */
-    public function addMany($queries): self
+    public function addMany(iterable $queries): static
     {
         Collection::make($queries)->each(function ($query) {
             $this->add(...$query);
@@ -258,9 +295,9 @@ class Searcher
      * Set the 'orderBy' column of the latest added model.
      *
      * @param string $orderByColumn
-     * @return self
+     * @return $this
      */
-    public function orderBy(string $orderByColumn): self
+    public function orderBy(string $orderByColumn): static
     {
         $this->modelsToSearchThrough->last()->orderByColumn($orderByColumn);
 
@@ -271,9 +308,9 @@ class Searcher
      * Ignore case of terms.
      *
      * @param boolean $state
-     * @return self
+     * @return $this
      */
-    public function ignoreCase(bool $state = true): self
+    public function ignoreCase(bool $state = true): static
     {
         $this->ignoreCase = $state;
 
@@ -284,9 +321,9 @@ class Searcher
      * Let's each search term begin with a wildcard.
      *
      * @param boolean $state
-     * @return self
+     * @return $this
      */
-    public function beginWithWildcard(bool $state = true): self
+    public function beginWithWildcard(bool $state = true): static
     {
         $this->beginWithWildcard = $state;
 
@@ -297,9 +334,9 @@ class Searcher
      * Let's each search term end with a wildcard.
      *
      * @param boolean $state
-     * @return self
+     * @return $this
      */
-    public function endWithWildcard(bool $state = true): self
+    public function endWithWildcard(bool $state = true): static
     {
         $this->endWithWildcard = $state;
 
@@ -309,9 +346,9 @@ class Searcher
     /**
      * Use 'sounds like' operator instead of 'like'.
      *
-     * @return self
+     * @return $this
      */
-    public function soundsLike(bool $state = true): self
+    public function soundsLike(bool $state = true): static
     {
         $this->soundsLike = $state;
 
@@ -326,14 +363,23 @@ class Searcher
      * @param integer $perPage
      * @param string $pageName
      * @param int|null $page
-     * @return self
+     * @return $this
      */
-    public function paginate($perPage = 15, $pageName = 'page', $page = null): self
+    public function paginate(int $perPage = 15, string $pageName = 'page', null|int $page = null): static
     {
-        $this->page           = $page ?: Paginator::resolveCurrentPage($pageName);
-        $this->pageName       = $pageName;
-        $this->perPage        = $perPage;
+        if ($this->isPaginate === false) {
+            if (!is_null($this->offset)) {
+                throw OffsetAlreadyPassedException::make();
+            }
+
+            throw LimitAlreadyPassedException::make();
+        }
+
+        $this->page = $page ?: Paginator::resolveCurrentPage($pageName);
+        $this->pageName = $pageName;
+        $this->limit = $perPage;
         $this->simplePaginate = false;
+        $this->isPaginate = true;
 
         return $this;
     }
@@ -344,9 +390,9 @@ class Searcher
      * @param integer $perPage
      * @param string $pageName
      * @param int|null $page
-     * @return self
+     * @return $this
      */
-    public function simplePaginate($perPage = 15, $pageName = 'page', $page = null): self
+    public function simplePaginate(int $perPage = 15, string $pageName = 'page', null|int $page = null): static
     {
         $this->paginate($perPage, $pageName, $page);
 
@@ -356,21 +402,55 @@ class Searcher
     }
 
     /**
+     * Set the offset
+     *
+     * @param int $offset
+     * @return $this
+     */
+    public function offset(int $offset): static
+    {
+        if ($this->isPaginate) {
+            throw PaginateAlreadyPassedException::make(__FUNCTION__);
+        }
+
+        $this->offset = $offset;
+        $this->isPaginate = false;
+
+        return $this;
+    }
+
+    /**
+     * Set limit
+     *
+     * @param int $limit
+     * @return $this
+     */
+    public function limit(int $limit): static
+    {
+        if ($this->isPaginate) {
+            throw PaginateAlreadyPassedException::make(__FUNCTION__);
+        }
+
+        $this->limit = $limit;
+        $this->isPaginate = false;
+
+        return $this;
+    }
+
+    /**
      * Parse the terms and loop through them with the optional callable.
      *
      * @param string $terms
-     * @param callable $callback
-     * @return \Illuminate\Support\Collection
+     * @param null|callable $callback
+     * @return Collection
      */
-    public function parseTerms(string $terms, callable $callback = null): Collection
+    public function parseTerms(string $terms, null|callable $callback = null): Collection
     {
-        $callback = $callback ?: fn () => null;
-
         return Collection::make(str_getcsv($terms, ' ', '"'))
             ->filter()
             ->values()
-            ->when($callback !== null, function ($terms) use ($callback) {
-                return $terms->each(fn ($value, $key) => $callback($value, $key));
+            ->when(!is_null($callback), function ($terms) use ($callback) {
+                return $terms->each(fn ($value, $key) => call_user_func($callback, $value, $key));
             });
     }
 
@@ -378,10 +458,9 @@ class Searcher
      * Creates a collection out of the given search term.
      *
      * @param string $terms
-     * @throws \ProtoneMedia\LaravelCrossEloquentSearch\EmptySearchQueryException
-     * @return self
+     * @return $this
      */
-    protected function initializeTerms(string $terms): self
+    protected function initializeTerms(string $terms): static
     {
         $this->rawTerms = $terms;
 
@@ -409,8 +488,8 @@ class Searcher
      * a series 'orWhere' clauses for each column and for
      * each search term.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $modelToSearchThrough
+     * @param Builder $builder
+     * @param ModelToSearchThrough $modelToSearchThrough
      * @return void
      */
     public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
@@ -421,11 +500,15 @@ class Searcher
 
         $builder->where(function (Builder $query) use ($modelToSearchThrough) {
             if (!$modelToSearchThrough->isFullTextSearch()) {
-                return $modelToSearchThrough->getColumns()->each(function ($column) use ($query, $modelToSearchThrough) {
-                    Str::contains($column, '.')
-                        ? $this->addNestedRelationToQuery($query, $column)
-                        : $this->addWhereTermsToQuery($query, $modelToSearchThrough->qualifyColumn($column));
-                });
+                $modelToSearchThrough->getColumns()->each(
+                    function ($column) use ($query, $modelToSearchThrough) {
+                        Str::contains($column, '.')
+                            ? $this->addNestedRelationToQuery($query, $column)
+                            : $this->addWhereTermsToQuery($query, $modelToSearchThrough->qualifyColumn($column));
+                    }
+                );
+
+                return;
             }
 
             $modelToSearchThrough
@@ -435,15 +518,22 @@ class Searcher
                         $query->orWhereHas($relation, function ($relationQuery) use ($modelToSearchThrough) {
                             $relationQuery->where(function ($query) use ($modelToSearchThrough) {
                                 $query->orWhereFullText(
-                                    $modelToSearchThrough->getColumns()->all(),
+                                    $modelToSearchThrough
+                                        ->getColumns()
+                                        ->all(),
                                     $this->rawTerms,
-                                    $modelToSearchThrough->getFullTextOptions()
+                                    $modelToSearchThrough
+                                        ->getFullTextOptions()
                                 );
                             });
                         });
                     } else {
                         $query->orWhereFullText(
-                            $modelToSearchThrough->getColumns()->map(fn ($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
+                            $modelToSearchThrough
+                                ->getColumns()
+                                ->map(fn ($column) => $modelToSearchThrough
+                                    ->qualifyColumn($column))
+                                ->all(),
                             $this->rawTerms,
                             $modelToSearchThrough->getFullTextOptions()
                         );
@@ -455,11 +545,11 @@ class Searcher
     /**
      * Adds an 'orWhereHas' clause to the query to search through the given nested relation.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $column
+     * @param Builder $query
+     * @param string $nestedRelationAndColumn
      * @return void
      */
-    private function addNestedRelationToQuery(Builder $query, string $nestedRelationAndColumn)
+    private function addNestedRelationToQuery(Builder $query, string $nestedRelationAndColumn): void
     {
         $segments = explode('.', $nestedRelationAndColumn);
 
@@ -477,13 +567,13 @@ class Searcher
     /**
      * Adds an 'orWhere' clause to search for each term in the given column.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param array|string $columns
+     * @param Builder $query
+     * @param string $column
      * @return void
      */
-    private function addWhereTermsToQuery(Builder $query, $column)
+    private function addWhereTermsToQuery(Builder $query, string $column): void
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar)->wrap($column) : $column;
+        $column = $this->ignoreCase ? $this->grammar->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
             $this->ignoreCase
@@ -493,35 +583,37 @@ class Searcher
     }
 
     /**
-     * Adds a word count so we can order by relevance.
+     * Adds a word count, so we can order by relevance.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $modelToSearchThrough
+     * @param Builder $builder
+     * @param ModelToSearchThrough $modelToSearchThrough
      * @return void
+     * @throws OrderByRelevanceException
      */
-    private function addRelevanceQueryToBuilder($builder, $modelToSearchThrough)
+    private function addRelevanceQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
     {
         if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
             return;
         }
 
         if (Str::contains($modelToSearchThrough->getColumns()->implode(''), '.')) {
-            throw OrderByRelevanceException::new();
+            throw OrderByRelevanceException::make();
         }
+
 
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
             $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
-            $field = (new MySqlGrammar)->wrap($prefix . $field);
+            $field = $this->grammar->wrap($field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
                 return [
                     'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
-                    'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
+                    'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
         });
 
-        $selects  = $expressionsAndBindings->map->expression->implode(' + ');
+        $selects = $expressionsAndBindings->map->expression->implode(' + ');
         $bindings = $expressionsAndBindings->flatMap->bindings->all();
 
         $builder->selectRaw("{$selects} as terms_count", $bindings);
@@ -531,38 +623,42 @@ class Searcher
      * Builds an array with all qualified columns for
      * both the ids and ordering.
      *
-     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $currentModel
+     * @param ModelToSearchThrough $currentModel
      * @return array
      */
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
-        return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
-            $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
+        return $this->modelsToSearchThrough->flatMap(
+            function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
+                $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
 
-            if ($modelToSearchThrough === $currentModel) {
-                $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
+                if ($modelToSearchThrough === $currentModel) {
+                    $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
 
-                $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
-                $qualifiedOrderByColumnName = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
+                    $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
+                    $qualifiedOrderByColumnName = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
 
-                if ($this->orderByModel) {
-                    $modelOrderKey = array_search(
-                        get_class($modelToSearchThrough->getModel()),
-                        $this->orderByModel ?: []
-                    );
+                    if ($this->orderByModel) {
+                        $modelOrderKey = array_search(
+                            get_class($modelToSearchThrough->getModel()),
+                            $this->orderByModel
+                        );
 
-                    if ($modelOrderKey === false) {
-                        $modelOrderKey = count($this->orderByModel);
+                        if ($modelOrderKey === false) {
+                            $modelOrderKey = count($this->orderByModel);
+                        }
                     }
                 }
-            }
 
-            return array_filter([
-                DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
-                DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
-                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
-            ]);
-        })->all();
+                return array_filter([
+                    DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
+                    DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
+                    $this->orderByModel ? DB::raw(
+                        "{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}"
+                    ) : null,
+                ]);
+            }
+        )->all();
     }
 
     /**
@@ -594,7 +690,7 @@ class Searcher
     /**
      * Builds the search queries for each given pending model.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Collection
      */
     protected function buildQueries(): Collection
     {
@@ -619,11 +715,11 @@ class Searcher
     }
 
     /**
-      * Compiles all queries to one big one which binds everything together
-      * using UNION statements.
-      *
-      * @return
-      */
+     * Compiles all queries to one big one which binds everything together
+     * using UNION statements.
+     *
+     * @return QueryBuilder
+     */
     protected function getCompiledQueryBuilder(): QueryBuilder
     {
         $queries = $this->buildQueries();
@@ -657,19 +753,27 @@ class Searcher
     /**
      * Paginates the compiled query or fetches all results.
      *
-     * @return \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @return Collection|LengthAwarePaginator|Paginator
      */
-    protected function getIdAndOrderAttributes()
+    protected function getIdAndOrderAttributes(): Collection|LengthAwarePaginator|Paginator
     {
         $query = $this->getCompiledQueryBuilder();
 
-        // Determine the pagination method to call on Eloquent\Builder
-        $paginateMethod = $this->simplePaginate ? 'simplePaginate' : 'paginate';
+        if (!is_null($this->pageName)) {
+            // Determine the pagination method to call on Eloquent\Builder
+            $paginateMethod = $this->simplePaginate ? 'simplePaginate' : 'paginate';
 
-        // get all results or limit the results by pagination
-        return $this->pageName
-            ? $query->{$paginateMethod}($this->perPage, ['*'], $this->pageName, $this->page)
-            : $query->get();
+            // get limit the results by pagination
+            return $query->{$paginateMethod}($this->limit, ['*'], $this->pageName, $this->page);
+        }
+
+        // get results
+        return $query
+            ->when(!is_null($this->limit), fn($query) => $query
+                ->limit($this->limit))
+            ->when(!is_null($this->offset), fn($query) => $query
+                ->offset($this->offset))
+            ->get();
 
         // the collection will be something like:
         //
@@ -692,10 +796,10 @@ class Searcher
     /**
      * Get the models per type.
      *
-     * @param \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator $results
-     * @return \Illuminate\Support\Collection
+     * @param Collection|LengthAwarePaginator|Paginator $results
+     * @return Collection
      */
-    protected function getModelsPerType($results)
+    protected function getModelsPerType(Collection|LengthAwarePaginator|Paginator $results): Collection
     {
         return $this->modelsToSearchThrough
             ->keyBy->getModelKey()
@@ -722,10 +826,10 @@ class Searcher
     /**
      * Retrieve the "count" result of the query.
      *
-     * @param string $terms
+     * @param null|string $terms
      * @return integer
      */
-    public function count(string $terms = null): int
+    public function count(null|string $terms = null): int
     {
         $this->initializeTerms($terms ?: '');
 
@@ -737,10 +841,10 @@ class Searcher
      * models per type. Map the results to a Eloquent collection and set
      * the collection on the paginator (whenever used).
      *
-     * @param string $terms
-     * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @param null|string $terms
+     * @return EloquentCollection|LengthAwarePaginator|Paginator
      */
-    public function search(string $terms = null)
+    public function search(null|string $terms = null): EloquentCollection|LengthAwarePaginator|Paginator
     {
         $this->initializeTerms($terms ?: '');
 
