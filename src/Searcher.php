@@ -483,7 +483,7 @@ class Searcher
      */
     private function addWhereTermsToQuery(Builder $query, $column)
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar)->wrap($column) : $column;
+        $column = $this->ignoreCase ? (new MySqlGrammar($query->getConnection()))->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
             $this->ignoreCase
@@ -510,8 +510,9 @@ class Searcher
         }
 
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
-            $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
-            $field = (new MySqlGrammar)->wrap($prefix . $field);
+            $connection = $modelToSearchThrough->getModel()->getConnection();
+            $prefix = $connection->getTablePrefix();
+            $field = (new MySqlGrammar($connection))->wrap($prefix . $field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
                 return [
