@@ -6,6 +6,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
@@ -76,7 +77,15 @@ class SearchTest extends TestCase
     /** @test */
     public function it_respects_table_prefixes()
     {
-        $this->initDatabase('prefix');
+        // Temporarily set table prefix
+        $connection = DB::connection();
+        $originalPrefix = $connection->getTablePrefix();
+        $connection->setTablePrefix('prefix_');
+
+        // Recreate tables with prefix
+        $this->artisan('migrate:fresh');
+        include_once __DIR__ . '/create_tables.php';
+        (new \CreateTables)->up();
 
         $postA  = Post::create(['title' => 'foo']);
         $postB  = Post::create(['title' => 'bar']);
@@ -88,6 +97,9 @@ class SearchTest extends TestCase
             ->count('foo');
 
         $this->assertEquals(3, $count);
+
+        // Reset prefix
+        $connection->setTablePrefix($originalPrefix);
     }
 
     /** @test */

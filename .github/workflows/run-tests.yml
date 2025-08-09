@@ -14,6 +14,7 @@ jobs:
         php: [8.4, 8.3, 8.2]
         laravel: ["10.*", "11.*", "12.*"]
         dependency-version: [prefer-lowest, prefer-stable]
+        db_connection: [mysql, sqlite]
         include:
           - laravel: 10.*
             testbench: ^8.32
@@ -22,7 +23,7 @@ jobs:
           - laravel: 12.*
             testbench: ^10.0
 
-    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
+    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.db_connection }} - ${{ matrix.dependency-version }}
 
     services:
       mysql:
@@ -62,6 +63,7 @@ jobs:
       - name: Execute tests
         run: vendor/bin/phpunit
         env:
+          DB_CONNECTION: ${{ matrix.db_connection }}
           DB_DATABASE: protone_media_db_test
           DB_USERNAME: protone_media_db_test
           DB_PASSWORD: secret

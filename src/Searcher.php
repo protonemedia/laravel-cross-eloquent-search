@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Pagination\Paginator;
+use ProtoneMedia\LaravelCrossEloquentSearch\DatabaseGrammarFactory;
+use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\SearchGrammarInterface;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +54,11 @@ class Searcher
      * Use soundex to match the terms.
      */
     protected bool $soundsLike = false;
+
+    /**
+     * Database-specific grammar instance.
+     */
+    protected ?SearchGrammarInterface $searchGrammar = null;
 
     /**
      * Ignore case.
@@ -218,6 +224,8 @@ class Searcher
 
         $this->modelsToSearchThrough->push($modelToSearchThrough);
 
+        $this->getSearchGrammar($builder->getConnection());
+
         return $this;
     }
 
@@ -315,7 +323,10 @@ class Searcher
     {
         $this->soundsLike = $state;
 
-        $this->whereOperator = $state ? 'sounds like' : 'like';
+        // Update operator if grammar is already initialized
+        if ($this->searchGrammar) {
+            $this->updateWhereOperator();
+        }
 
         return $this;
     }
@@ -483,11 +494,13 @@ class Searcher
      */
     private function addWhereTermsToQuery(Builder $query, $column)
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar($query->getConnection()))->wrap($column) : $column;
+        $grammar = $this->getSearchGrammar($query->getConnection());
 
-        $this->terms->each(function ($term) use ($query, $column) {
+        $column = $this->ignoreCase ? $grammar->wrap($column) : $column;
+
+        $this->terms->each(function ($term) use ($query, $column, $grammar) {
             $this->ignoreCase
-                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
+                ? $query->orWhereRaw($grammar->caseInsensitive($column) . " {$this->whereOperator} ?", [$term])
                 : $query->orWhere($column, $this->whereOperator, $term);
         });
     }
@@ -511,12 +524,18 @@ class Searcher
 
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
             $connection = $modelToSearchThrough->getModel()->getConnection();
+            $grammar = $this->getSearchGrammar($connection);
             $prefix = $connection->getTablePrefix();
-            $field = (new MySqlGrammar($connection))->wrap($prefix . $field);
+            $field = $grammar->wrap($prefix . $field);
 
-            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+            return $this->termsWithoutWildcards->map(function ($term) use ($field, $grammar) {
+                $lowerField = $grammar->lower($field);
+                $charLength = $grammar->charLength($lowerField);
+                $replace = $grammar->replace($lowerField, '?', '?');
+                $replacedCharLength = $grammar->charLength($replace);
+
                 return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
+                    'expression' => $grammar->coalesce(["{$charLength} - {$replacedCharLength}", '0']),
                     'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
@@ -537,7 +556,7 @@ class Searcher
      */
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
-        return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
+        $selects = $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
             $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
 
             if ($modelToSearchThrough === $currentModel) {
@@ -564,6 +583,8 @@ class Searcher
                 $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
             ]);
         })->all();
+
+        return $selects;
     }
 
     /**
@@ -574,9 +595,10 @@ class Searcher
      */
     protected function makeOrderBy(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
+        $grammar = $this->getSearchGrammar();
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->toArray();
 
-        return "COALESCE({$modelOrderKeys})";
+        return $grammar->coalesce($modelOrderKeys);
     }
 
     /**
@@ -587,9 +609,10 @@ class Searcher
      */
     protected function makeOrderByModel(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
+        $grammar = $this->getSearchGrammar();
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->toArray();
 
-        return "COALESCE({$modelOrderKeys})";
+        return $grammar->coalesce($modelOrderKeys);
     }
 
     /**
@@ -637,22 +660,140 @@ class Searcher
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
-        if ($this->orderByModel) {
-            $firstQuery->orderBy(
-                DB::raw($this->makeOrderByModel()),
-                $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
-            );
-        }
+        return $this->needsUnionWrapper($firstQuery)
+            ? $this->buildWrappedUnionQuery($firstQuery)
+            : $this->buildStandardUnionQuery($firstQuery);
+    }
 
-        if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
+    /**
+     * Determines if the query needs to be wrapped for proper ordering.
+     *
+     * @param mixed $query
+     * @return bool
+     */
+    protected function needsUnionWrapper($query): bool
+    {
+        return $this->hasMultipleModels()
+            && !$this->getSearchGrammar()->supportsUnionOrdering();
+    }
+
+    /**
+     * Checks if we're searching across multiple models.
+     *
+     * @return bool
+     */
+    protected function hasMultipleModels(): bool
+    {
+        return $this->modelsToSearchThrough->count() > 1;
+    }
+
+    /**
+     * Builds a wrapped union query for databases that don't support complex UNION ordering.
+     *
+     * @param \Illuminate\Database\Query\Builder $firstQuery
+     * @return \Illuminate\Database\Query\Builder
+     */
+    protected function buildWrappedUnionQuery($firstQuery): QueryBuilder
+    {
+        $grammar = $this->getSearchGrammar();
+        $wrappedQuery = $grammar->wrapUnionQuery($firstQuery->toSql(), $firstQuery->getBindings());
+
+        $wrapperQuery = DB::table(DB::raw($wrappedQuery['sql']))
+            ->setBindings($wrappedQuery['bindings'])
+            ->select('*');
+
+        $this->applyModelOrdering($wrapperQuery);
+        $this->applyRelevanceOrdering($wrapperQuery);
+        $this->applyStandardOrdering($wrapperQuery);
+
+        return $wrapperQuery;
+    }
+
+    /**
+     * Builds a standard union query for databases that support complex UNION ordering.
+     *
+     * @param \Illuminate\Database\Query\Builder $firstQuery
+     * @return \Illuminate\Database\Query\Builder
+     */
+    protected function buildStandardUnionQuery($firstQuery): QueryBuilder
+    {
+        $this->applyModelOrdering($firstQuery);
+
+        if ($this->shouldOrderByRelevance()) {
             return $firstQuery->orderBy('terms_count', 'desc');
         }
 
-        // sort by the given columns and direction
         return $firstQuery->orderBy(
             DB::raw($this->makeOrderBy()),
-            $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+            $this->getOrderDirection()
         );
+    }
+
+    /**
+     * Applies model ordering to the query.
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     * @return void
+     */
+    protected function applyModelOrdering($query): void
+    {
+        if (!$this->orderByModel) {
+            return;
+        }
+
+        $grammar = $this->getSearchGrammar();
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->toArray();
+        $modelCoalesceExpr = $grammar->coalesce($modelOrderKeys);
+
+        $query->orderByRaw($modelCoalesceExpr . ' ' . $this->getOrderDirection());
+    }
+
+    /**
+     * Applies relevance ordering to the query.
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     * @return void
+     */
+    protected function applyRelevanceOrdering($query): void
+    {
+        if ($this->shouldOrderByRelevance()) {
+            $query->orderBy('terms_count', 'desc');
+        }
+    }
+
+    /**
+     * Applies standard column ordering to the query.
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     * @return void
+     */
+    protected function applyStandardOrdering($query): void
+    {
+        if ($this->shouldOrderByRelevance()) {
+            return;
+        }
+
+        $grammar = $this->getSearchGrammar();
+        $orderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->toArray();
+        $coalesceExpr = $grammar->coalesce($orderKeys);
+
+        $query->orderByRaw($coalesceExpr . ' ' . $this->getOrderDirection());
+    }
+
+    /**
+     * Determines if ordering should be by relevance.
+     */
+    protected function shouldOrderByRelevance(): bool
+    {
+        return $this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty();
+    }
+
+    /**
+     * Gets the appropriate order direction.
+     */
+    protected function getOrderDirection(): string
+    {
+        return $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection;
     }
 
     /**
@@ -777,5 +918,56 @@ class Searcher
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
+    }
+
+    /**
+     * Gets the search grammar, initializing it lazily on first access.
+     *
+     * @param \Illuminate\Database\Connection|null $connection Optional database connection
+     * @return \ProtoneMedia\LaravelCrossEloquentSearch\Grammars\SearchGrammarInterface
+     */
+    protected function getSearchGrammar($connection = null): SearchGrammarInterface
+    {
+        if ($this->searchGrammar) {
+            return $this->searchGrammar;
+        }
+
+        // Use provided connection or get from first model
+        $connection = $connection ?: $this->getFirstModelConnection();
+
+        $this->searchGrammar = DatabaseGrammarFactory::make($connection);
+        $this->updateWhereOperator();
+
+        return $this->searchGrammar;
+    }
+
+    /**
+     * Gets the database connection from the first available model.
+     *
+     * @return \Illuminate\Database\Connection
+     * @throws \RuntimeException When no models have been added
+     */
+    protected function getFirstModelConnection()
+    {
+        $firstModel = $this->modelsToSearchThrough->first();
+
+        if (!$firstModel) {
+            throw new \RuntimeException('No models have been added to search through.');
+        }
+
+        return $firstModel->getModel()->getConnection();
+    }
+
+    /**
+     * Updates the where operator based on the current grammar capabilities.
+     */
+    protected function updateWhereOperator(): void
+    {
+        if ($this->soundsLike && $this->searchGrammar->supportsSoundsLike()) {
+            $this->whereOperator = $this->searchGrammar->soundsLikeOperator();
+        } else {
+            $this->whereOperator = 'like';
+            $this->soundsLike = false;
+        }
     }
 }

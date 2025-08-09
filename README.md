@@ -16,8 +16,17 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 ## Requirements
 
 * PHP 8.2 or higher
-* MySQL 8.0+
+* MySQL 8.0+ or SQLite 3.8+
 * Laravel 10.0+
+
+## Database Support
+
+This package supports both **MySQL** and **SQLite** databases. Most features work identically across both database systems, with the following limitations for SQLite:
+
+* **Sounds Like**: The `soundsLike()` method falls back to regular `LIKE` matching since SQLite doesn't support the `SOUNDS LIKE` operator
+* **Full-Text Search**: MySQL's `MATCH() AGAINST()` full-text search falls back to `LIKE` matching on SQLite
+
+All other features including cross-model search, pagination, sorting, and relationship searching work identically on both database systems.
 
 ## Features
 
@@ -253,6 +262,8 @@ Search::new()
     ->search('framework -css');
 ```
 
+**Note**: On SQLite databases, full-text search automatically falls back to regular `LIKE` matching since SQLite doesn't support MySQL's `MATCH() AGAINST()` syntax.
+
 ### Sounds like
 
 MySQL has a *soundex* algorithm built-in so you can search for terms that sound almost the same. You can use this feature by calling the `soundsLike` method:
@@ -264,6 +275,8 @@ Search::new()
     ->soundsLike()
     ->search('larafel');
 ```
+
+**Note**: On SQLite databases, this feature automatically falls back to regular `LIKE` matching since SQLite doesn't support the `SOUNDS LIKE` operator.
 
 ### Eager load relationships
 

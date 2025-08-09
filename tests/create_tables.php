@@ -43,9 +43,12 @@ class CreateTables extends Migration
             $table->string('subtitle');
             $table->string('body');
 
-            $table->fullText('title');
-            $table->fullText(['title', 'subtitle']);
-            $table->fullText(['title', 'subtitle', 'body']);
+            // Only add fulltext indexes for MySQL
+            if (config('database.default') === 'mysql') {
+                $table->fullText('title');
+                $table->fullText(['title', 'subtitle']);
+                $table->fullText(['title', 'subtitle', 'body']);
+            }
 
             $table->unsignedInteger('video_id')->nullable();
 
@@ -58,9 +61,12 @@ class CreateTables extends Migration
             $table->string('subtitle')->nullable();
             $table->string('body')->nullable();
 
-            $table->fullText('title');
-            $table->fullText(['title', 'subtitle']);
-            $table->fullText(['title', 'subtitle', 'body']);
+            // Only add fulltext indexes for MySQL
+            if (config('database.default') === 'mysql') {
+                $table->fullText('title');
+                $table->fullText(['title', 'subtitle']);
+                $table->fullText(['title', 'subtitle', 'body']);
+            }
 
             $table->unsignedInteger('video_id')->nullable();
 
