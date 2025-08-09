@@ -138,18 +138,11 @@ class ModelToSearchThrough
      */
     public function getModelKey($suffix = 'key'): string
     {
-        $parts = [
+        return implode('_', [
             $this->key,
             Str::snake(class_basename($this->getModel())),
             $suffix,
-        ];
-
-        // SQLite doesn't allow column aliases starting with numbers
-        if ($this->getModel()->getConnection()->getDriverName() === 'sqlite') {
-            array_unshift($parts, 'model');
-        }
-
-        return implode('_', $parts);
+        ]);
     }
 
     /**

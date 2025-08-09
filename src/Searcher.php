@@ -556,7 +556,9 @@ class Searcher
      */
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
-        $selects = $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
+        $grammar = $this->getSearchGrammar();
+        
+        $selects = $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel, $grammar) {
             $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
 
             if ($modelToSearchThrough === $currentModel) {
@@ -578,9 +580,9 @@ class Searcher
             }
 
             return array_filter([
-                DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
-                DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
-                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
+                DB::raw("{$qualifiedKeyName} as {$grammar->wrap($modelToSearchThrough->getModelKey())}"),
+                DB::raw("{$qualifiedOrderByColumnName} as {$grammar->wrap($modelToSearchThrough->getModelKey('order'))}"),
+                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$grammar->wrap($modelToSearchThrough->getModelKey('model_order'))}") : null,
             ]);
         })->all();
 
@@ -596,7 +598,9 @@ class Searcher
     protected function makeOrderBy(): string
     {
         $grammar = $this->getSearchGrammar();
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->toArray();
+        $modelOrderKeys = $this->modelsToSearchThrough->map(function($modelToSearchThrough) use ($grammar) {
+            return $grammar->wrap($modelToSearchThrough->getModelKey('order'));
+        })->toArray();
 
         return $grammar->coalesce($modelOrderKeys);
     }
@@ -610,7 +614,9 @@ class Searcher
     protected function makeOrderByModel(): string
     {
         $grammar = $this->getSearchGrammar();
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->toArray();
+        $modelOrderKeys = $this->modelsToSearchThrough->map(function($modelToSearchThrough) use ($grammar) {
+            return $grammar->wrap($modelToSearchThrough->getModelKey('model_order'));
+        })->toArray();
 
         return $grammar->coalesce($modelOrderKeys);
     }
@@ -742,7 +748,9 @@ class Searcher
         }
 
         $grammar = $this->getSearchGrammar();
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->toArray();
+        $modelOrderKeys = $this->modelsToSearchThrough->map(function($modelToSearchThrough) use ($grammar) {
+            return $grammar->wrap($modelToSearchThrough->getModelKey('model_order'));
+        })->toArray();
         $modelCoalesceExpr = $grammar->coalesce($modelOrderKeys);
 
         $query->orderByRaw($modelCoalesceExpr . ' ' . $this->getOrderDirection());
@@ -774,7 +782,9 @@ class Searcher
         }
 
         $grammar = $this->getSearchGrammar();
-        $orderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->toArray();
+        $orderKeys = $this->modelsToSearchThrough->map(function($modelToSearchThrough) use ($grammar) {
+            return $grammar->wrap($modelToSearchThrough->getModelKey('order'));
+        })->toArray();
         $coalesceExpr = $grammar->coalesce($orderKeys);
 
         $query->orderByRaw($coalesceExpr . ' ' . $this->getOrderDirection());
