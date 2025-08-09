@@ -78,51 +78,18 @@ class SearchTest extends TestCase
     /** @test */
     public function it_respects_table_prefixes()
     {
-        $connection = DB::connection();
-        $originalPrefix = $connection->getTablePrefix();
+        $this->initDatabase('prefix_');
 
-        try {
-            // Set prefix FIRST before creating tables
-            $connection->setTablePrefix('prefix_');
-            
-            // Drop existing unprefixed tables
-            $connection->setTablePrefix($originalPrefix);
-            Schema::dropIfExists('posts');
-            Schema::dropIfExists('videos');
-            Schema::dropIfExists('comments');
-            Schema::dropIfExists('blogs');
-            Schema::dropIfExists('pages');
-            
-            // Set prefix back and create prefixed tables
-            $connection->setTablePrefix('prefix_');
-            include_once __DIR__ . '/create_tables.php';
-            (new \CreateTables)->up();
+        $postA  = Post::create(['title' => 'foo']);
+        $postB  = Post::create(['title' => 'bar']);
+        $videoA = Video::create(['title' => 'foo']);
+        $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
-            $postA  = Post::create(['title' => 'foo']);
-            $postB  = Post::create(['title' => 'bar']);
-            $videoA = Video::create(['title' => 'foo']);
-            $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
+        $count = Search::add(Post::class, 'title')
+            ->add(Video::class, ['title', 'subtitle'])
+            ->count('foo');
 
-            $count = Search::add(Post::class, 'title')
-                ->add(Video::class, ['title', 'subtitle'])
-                ->count('foo');
-
-            $this->assertEquals(3, $count);
-        } finally {
-            // Always reset prefix and recreate original tables
-            $connection->setTablePrefix($originalPrefix);
-            
-            // Drop prefixed tables
-            Schema::dropIfExists('prefix_posts');
-            Schema::dropIfExists('prefix_videos');
-            Schema::dropIfExists('prefix_comments');
-            Schema::dropIfExists('prefix_blogs');
-            Schema::dropIfExists('prefix_pages');
-            
-            // Recreate original tables for other tests
-            include_once __DIR__ . '/create_tables.php';
-            (new \CreateTables)->up();
-        }
+        $this->assertEquals(3, $count);
     }
 
     /** @test */
