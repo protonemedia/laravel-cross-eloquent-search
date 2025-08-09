@@ -7,6 +7,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
@@ -77,30 +78,48 @@ class SearchTest extends TestCase
     /** @test */
     public function it_respects_table_prefixes()
     {
-        // Create a new in-memory database with prefix for testing
         $connection = DB::connection();
         $originalPrefix = $connection->getTablePrefix();
 
-        // Create tables first, then set prefix and recreate
-        $connection->setTablePrefix('prefix_');
-        
-        // Create the prefixed tables manually
-        include_once __DIR__ . '/create_tables.php';
-        (new \CreateTables)->up();
+        try {
+            // Drop existing tables first
+            Schema::dropIfExists('posts');
+            Schema::dropIfExists('videos');
+            Schema::dropIfExists('comments');
+            Schema::dropIfExists('blogs');
+            Schema::dropIfExists('pages');
 
-        $postA  = Post::create(['title' => 'foo']);
-        $postB  = Post::create(['title' => 'bar']);
-        $videoA = Video::create(['title' => 'foo']);
-        $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
+            // Set prefix and create prefixed tables
+            $connection->setTablePrefix('prefix_');
+            
+            include_once __DIR__ . '/create_tables.php';
+            (new \CreateTables)->up();
 
-        $count = Search::add(Post::class, 'title')
-            ->add(Video::class, ['title', 'subtitle'])
-            ->count('foo');
+            $postA  = Post::create(['title' => 'foo']);
+            $postB  = Post::create(['title' => 'bar']);
+            $videoA = Video::create(['title' => 'foo']);
+            $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
-        $this->assertEquals(3, $count);
+            $count = Search::add(Post::class, 'title')
+                ->add(Video::class, ['title', 'subtitle'])
+                ->count('foo');
 
-        // Reset prefix and clean up
-        $connection->setTablePrefix($originalPrefix);
+            $this->assertEquals(3, $count);
+        } finally {
+            // Always reset prefix and recreate original tables
+            $connection->setTablePrefix($originalPrefix);
+            
+            // Drop prefixed tables
+            Schema::dropIfExists('prefix_posts');
+            Schema::dropIfExists('prefix_videos');
+            Schema::dropIfExists('prefix_comments');
+            Schema::dropIfExists('prefix_blogs');
+            Schema::dropIfExists('prefix_pages');
+            
+            // Recreate original tables for other tests
+            include_once __DIR__ . '/create_tables.php';
+            (new \CreateTables)->up();
+        }
     }
 
     /** @test */

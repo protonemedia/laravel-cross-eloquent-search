@@ -24,7 +24,7 @@ class QueryCompiler
     public function compile(array $modelQueries): QueryBuilder
     {
         $queries = collect($modelQueries);
-        
+
         /** @var QueryBuilder $firstQuery */
         $firstQuery = $queries->shift()->toBase();
 
@@ -41,7 +41,7 @@ class QueryCompiler
      */
     private function needsUnionWrapper(QueryBuilder $query): bool
     {
-        return $this->hasMultipleModels() 
+        return $this->hasMultipleModels()
             && !$this->grammar->supportsUnionOrdering();
     }
 
@@ -101,7 +101,7 @@ class QueryCompiler
         $modelOrderKeys = $this->models->map(function ($modelToSearchThrough) {
             return $this->grammar->wrap($modelToSearchThrough->getModelKey('model_order'));
         })->toArray();
-        
+
         $modelCoalesceExpr = $this->grammar->coalesce($modelOrderKeys);
 
         $query->orderByRaw($modelCoalesceExpr . ' ' . $this->getOrderDirection());
@@ -129,7 +129,7 @@ class QueryCompiler
         $orderKeys = $this->models->map(function ($modelToSearchThrough) {
             return $this->grammar->wrap($modelToSearchThrough->getModelKey('order'));
         })->toArray();
-        
+
         $coalesceExpr = $this->grammar->coalesce($orderKeys);
 
         $query->orderByRaw($coalesceExpr . ' ' . $this->getOrderDirection());
