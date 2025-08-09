@@ -7,7 +7,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
 

@@ -3,6 +3,7 @@
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Database\Connection;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\InvalidGrammarException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\MySqlSearchGrammar;
 use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\SQLiteSearchGrammar;
 use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\SearchGrammarInterface;
@@ -21,7 +22,7 @@ class DatabaseGrammarFactory
      *
      * @param \Illuminate\Database\Connection $connection
      * @return \ProtoneMedia\LaravelCrossEloquentSearch\Grammars\SearchGrammarInterface
-     * @throws \InvalidArgumentException
+     * @throws InvalidGrammarException
      */
     public static function make(Connection $connection): SearchGrammarInterface
     {
@@ -34,7 +35,7 @@ class DatabaseGrammarFactory
             case 'sqlite':
                 return new SQLiteSearchGrammar($connection);
             default:
-                throw new \InvalidArgumentException("Database driver '{$driver}' is not supported for cross-eloquent search.");
+                throw InvalidGrammarException::driverNotSupported($driver);
         }
     }
 }

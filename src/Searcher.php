@@ -15,8 +15,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
+use ProtoneMedia\LaravelCrossEloquentSearch\Contracts\SearcherContract;
+use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OrderByRelevanceException;
+use ProtoneMedia\LaravelCrossEloquentSearch\ValueObjects\OrderDirection;
 
-class Searcher
+class Searcher implements SearcherContract
 {
     use Conditionable;
 
@@ -171,13 +174,23 @@ class Searcher
     }
 
     /**
+     * Configure term parsing.
+     */
+    public function parseTerm(bool $state = true): self
+    {
+        $this->parseTerm = $state;
+
+        return $this;
+    }
+
+    /**
      * Disable the parsing of the search term.
+     *
+     * @deprecated Use parseTerm(false) instead
      */
     public function dontParseTerm(): self
     {
-        $this->parseTerm = false;
-
-        return $this;
+        return $this->parseTerm(false);
     }
 
     /**
@@ -373,7 +386,7 @@ class Searcher
      * @param callable $callback
      * @return \Illuminate\Support\Collection
      */
-    public function parseTerms(string $terms, callable $callback = null): Collection
+    public static function parseTerms(string $terms, callable $callback = null): Collection
     {
         $callback = $callback ?: fn () => null;
 
@@ -396,7 +409,7 @@ class Searcher
     {
         $this->rawTerms = $terms;
 
-        $terms = $this->parseTerm ? $this->parseTerms($terms) : $terms;
+        $terms = $this->parseTerm ? static::parseTerms($terms) : $terms;
 
         $this->termsWithoutWildcards = Collection::wrap($terms)->filter()->map(function ($term) {
             return $this->ignoreCase ? Str::lower($term) : $term;
@@ -519,7 +532,7 @@ class Searcher
         }
 
         if (Str::contains($modelToSearchThrough->getColumns()->implode(''), '.')) {
-            throw OrderByRelevanceException::new();
+            throw OrderByRelevanceException::relationColumnsNotSupported();
         }
 
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
