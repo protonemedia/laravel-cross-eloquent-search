@@ -82,16 +82,19 @@ class SearchTest extends TestCase
         $originalPrefix = $connection->getTablePrefix();
 
         try {
-            // Drop existing tables first
+            // Set prefix FIRST before creating tables
+            $connection->setTablePrefix('prefix_');
+            
+            // Drop existing unprefixed tables
+            $connection->setTablePrefix($originalPrefix);
             Schema::dropIfExists('posts');
             Schema::dropIfExists('videos');
             Schema::dropIfExists('comments');
             Schema::dropIfExists('blogs');
             Schema::dropIfExists('pages');
-
-            // Set prefix and create prefixed tables
-            $connection->setTablePrefix('prefix_');
             
+            // Set prefix back and create prefixed tables
+            $connection->setTablePrefix('prefix_');
             include_once __DIR__ . '/create_tables.php';
             (new \CreateTables)->up();
 
