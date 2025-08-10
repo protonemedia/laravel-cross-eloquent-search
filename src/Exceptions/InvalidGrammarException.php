@@ -2,7 +2,9 @@
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch\Exceptions;
 
-class InvalidGrammarException extends CrossEloquentSearchException
+use Exception;
+
+class InvalidGrammarException extends Exception
 {
     public static function driverNotSupported(string $driver): self
     {

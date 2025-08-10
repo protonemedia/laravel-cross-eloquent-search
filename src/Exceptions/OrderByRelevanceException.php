@@ -2,7 +2,9 @@
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch\Exceptions;
 
-class OrderByRelevanceException extends CrossEloquentSearchException
+use Exception;
+
+class OrderByRelevanceException extends Exception
 {
     public static function relationColumnsNotSupported(): self
     {

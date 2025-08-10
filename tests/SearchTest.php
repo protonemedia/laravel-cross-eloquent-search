@@ -119,7 +119,7 @@ class SearchTest extends TestCase
 
         $results = Search::add(Post::class, 'title')
             ->add(Video::class, 'title')
-            ->dontParseTerm()
+            ->parseTerm(false)
             ->search('bar bar');
 
         $this->assertCount(1, $results);

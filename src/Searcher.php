@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
 use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OrderByRelevanceException;
-use ProtoneMedia\LaravelCrossEloquentSearch\ValueObjects\OrderDirection;
 
 class Searcher
 {
@@ -25,7 +24,7 @@ class Searcher
     /**
      * Collection of models to search through.
      */
-    protected Collection $modelsToSearchThrough;
+    protected Collection $models;
 
     /**
      * Sort direction.
@@ -115,11 +114,11 @@ class Searcher
     protected ?string $includeModelTypeWithKey = null;
 
     /**
-     * Initialises the instanace with a fresh Collection and default sort.
+     * Initialize with a fresh Collection and default sort.
      */
     public function __construct()
     {
-        $this->modelsToSearchThrough = new Collection;
+        $this->models = new Collection;
 
         $this->orderByAsc();
     }
@@ -182,15 +181,6 @@ class Searcher
         return $this;
     }
 
-    /**
-     * Disable the parsing of the search term.
-     *
-     * @deprecated Use parseTerm(false) instead
-     */
-    public function dontParseTerm(): self
-    {
-        return $this->parseTerm(false);
-    }
 
     /**
      * Enable the inclusion of the model type in the search results.
@@ -231,10 +221,10 @@ class Searcher
             $builder,
             Collection::wrap($columns),
             $orderByColumn,
-            $this->modelsToSearchThrough->count(),
+            $this->models->count(),
         );
 
-        $this->modelsToSearchThrough->push($modelToSearchThrough);
+        $this->models->push($modelToSearchThrough);
 
         $this->getSearchGrammar($builder->getConnection());
 
@@ -249,12 +239,12 @@ class Searcher
             $builder,
             Collection::wrap($columns),
             $orderByColumn ?: $builder->getModel()->getUpdatedAtColumn(),
-            $this->modelsToSearchThrough->count(),
+            $this->models->count(),
             true,
             $options
         );
 
-        $this->modelsToSearchThrough->push($modelToSearchThrough);
+        $this->models->push($modelToSearchThrough);
 
         return $this;
     }
@@ -282,7 +272,7 @@ class Searcher
      */
     public function orderBy(string $orderByColumn): self
     {
-        $this->modelsToSearchThrough->last()->orderByColumn($orderByColumn);
+        $this->models->last()->orderByColumn($orderByColumn);
 
         return $this;
     }
@@ -570,7 +560,7 @@ class Searcher
     {
         $grammar = $this->getSearchGrammar();
         
-        $selects = $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel, $grammar) {
+        $selects = $this->models->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel, $grammar) {
             $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
 
             if ($modelToSearchThrough === $currentModel) {
@@ -610,7 +600,7 @@ class Searcher
     protected function makeOrderBy(): string
     {
         $grammar = $this->getSearchGrammar();
-        $modelOrderKeys = $this->modelsToSearchThrough->map(function($modelToSearchThrough) use ($grammar) {
+        $modelOrderKeys = $this->models->map(function($modelToSearchThrough) use ($grammar) {
             return $grammar->wrap($modelToSearchThrough->getModelKey('order'));
         })->toArray();
 
@@ -626,7 +616,7 @@ class Searcher
     protected function makeOrderByModel(): string
     {
         $grammar = $this->getSearchGrammar();
-        $modelOrderKeys = $this->modelsToSearchThrough->map(function($modelToSearchThrough) use ($grammar) {
+        $modelOrderKeys = $this->models->map(function($modelToSearchThrough) use ($grammar) {
             return $grammar->wrap($modelToSearchThrough->getModelKey('model_order'));
         })->toArray();
 
@@ -640,7 +630,7 @@ class Searcher
      */
     protected function buildQueries(): Collection
     {
-        return $this->modelsToSearchThrough->map(function (ModelToSearchThrough $modelToSearchThrough) {
+        return $this->models->map(function (ModelToSearchThrough $modelToSearchThrough) {
             return $modelToSearchThrough->getFreshBuilder()
                 ->select($this->makeSelects($modelToSearchThrough))
                 ->tap(function ($builder) use ($modelToSearchThrough) {
@@ -670,152 +660,67 @@ class Searcher
     {
         $queries = $this->buildQueries();
 
-        // take the first query
-
         /** @var BaseBuilder $firstQuery */
         $firstQuery = $queries->shift()->toBase();
 
-        // union the other queries together
+        // Union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
-        return $this->needsUnionWrapper($firstQuery)
-            ? $this->buildWrappedUnionQuery($firstQuery)
-            : $this->buildStandardUnionQuery($firstQuery);
+        // SQLite needs wrapped unions for proper ordering
+        if ($this->models->count() > 1 && !$this->getSearchGrammar()->supportsUnionOrdering()) {
+            return $this->wrapUnionForOrdering($firstQuery);
+        }
+
+        // Apply ordering directly to the union query
+        return $this->applyOrdering($firstQuery);
     }
 
     /**
-     * Determines if the query needs to be wrapped for proper ordering.
-     *
-     * @param mixed $query
-     * @return bool
+     * Wrap a UNION query for databases that don't support direct UNION ordering.
      */
-    protected function needsUnionWrapper($query): bool
-    {
-        return $this->hasMultipleModels()
-            && !$this->getSearchGrammar()->supportsUnionOrdering();
-    }
-
-    /**
-     * Checks if we're searching across multiple models.
-     *
-     * @return bool
-     */
-    protected function hasMultipleModels(): bool
-    {
-        return $this->modelsToSearchThrough->count() > 1;
-    }
-
-    /**
-     * Builds a wrapped union query for databases that don't support complex UNION ordering.
-     *
-     * @param \Illuminate\Database\Query\Builder $firstQuery
-     * @return \Illuminate\Database\Query\Builder
-     */
-    protected function buildWrappedUnionQuery($firstQuery): QueryBuilder
+    protected function wrapUnionForOrdering($firstQuery): QueryBuilder
     {
         $grammar = $this->getSearchGrammar();
         $wrappedQuery = $grammar->wrapUnionQuery($firstQuery->toSql(), $firstQuery->getBindings());
 
-        $wrapperQuery = DB::table(DB::raw($wrappedQuery['sql']))
+        $query = DB::table(DB::raw($wrappedQuery['sql']))
             ->setBindings($wrappedQuery['bindings'])
             ->select('*');
 
-        $this->applyModelOrdering($wrapperQuery);
-        $this->applyRelevanceOrdering($wrapperQuery);
-        $this->applyStandardOrdering($wrapperQuery);
-
-        return $wrapperQuery;
+        return $this->applyOrdering($query);
     }
 
     /**
-     * Builds a standard union query for databases that support complex UNION ordering.
-     *
-     * @param \Illuminate\Database\Query\Builder $firstQuery
-     * @return \Illuminate\Database\Query\Builder
+     * Apply ordering to the query based on configuration.
      */
-    protected function buildStandardUnionQuery($firstQuery): QueryBuilder
+    protected function applyOrdering($query): QueryBuilder
     {
-        $this->applyModelOrdering($firstQuery);
-
-        if ($this->shouldOrderByRelevance()) {
-            return $firstQuery->orderBy('terms_count', 'desc');
-        }
-
-        return $firstQuery->orderBy(
-            DB::raw($this->makeOrderBy()),
-            $this->getOrderDirection()
-        );
-    }
-
-    /**
-     * Applies model ordering to the query.
-     *
-     * @param \Illuminate\Database\Query\Builder $query
-     * @return void
-     */
-    protected function applyModelOrdering($query): void
-    {
-        if (!$this->orderByModel) {
-            return;
-        }
-
         $grammar = $this->getSearchGrammar();
-        $modelOrderKeys = $this->modelsToSearchThrough->map(function($modelToSearchThrough) use ($grammar) {
-            return $grammar->wrap($modelToSearchThrough->getModelKey('model_order'));
-        })->toArray();
-        $modelCoalesceExpr = $grammar->coalesce($modelOrderKeys);
 
-        $query->orderByRaw($modelCoalesceExpr . ' ' . $this->getOrderDirection());
-    }
+        // Model type ordering takes precedence
+        if ($this->orderByModel) {
+            $modelOrderKeys = $this->models->map(fn($model) => 
+                $grammar->wrap($model->getModelKey('model_order'))
+            )->toArray();
+            
+            $direction = $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection;
+            $query->orderByRaw($grammar->coalesce($modelOrderKeys) . ' ' . $direction);
+        }
 
-    /**
-     * Applies relevance ordering to the query.
-     *
-     * @param \Illuminate\Database\Query\Builder $query
-     * @return void
-     */
-    protected function applyRelevanceOrdering($query): void
-    {
-        if ($this->shouldOrderByRelevance()) {
+        // Then relevance ordering or standard column ordering
+        if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
             $query->orderBy('terms_count', 'desc');
-        }
-    }
-
-    /**
-     * Applies standard column ordering to the query.
-     *
-     * @param \Illuminate\Database\Query\Builder $query
-     * @return void
-     */
-    protected function applyStandardOrdering($query): void
-    {
-        if ($this->shouldOrderByRelevance()) {
-            return;
+        } else {
+            // Always add the standard column ordering (even with model ordering as secondary sort)
+            $orderKeys = $this->models->map(fn($model) => 
+                $grammar->wrap($model->getModelKey('order'))
+            )->toArray();
+            
+            $direction = $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection;
+            $query->orderByRaw($grammar->coalesce($orderKeys) . ' ' . $direction);
         }
 
-        $grammar = $this->getSearchGrammar();
-        $orderKeys = $this->modelsToSearchThrough->map(function($modelToSearchThrough) use ($grammar) {
-            return $grammar->wrap($modelToSearchThrough->getModelKey('order'));
-        })->toArray();
-        $coalesceExpr = $grammar->coalesce($orderKeys);
-
-        $query->orderByRaw($coalesceExpr . ' ' . $this->getOrderDirection());
-    }
-
-    /**
-     * Determines if ordering should be by relevance.
-     */
-    protected function shouldOrderByRelevance(): bool
-    {
-        return $this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty();
-    }
-
-    /**
-     * Gets the appropriate order direction.
-     */
-    protected function getOrderDirection(): string
-    {
-        return $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection;
+        return $query;
     }
 
     /**
@@ -861,7 +766,7 @@ class Searcher
      */
     protected function getModelsPerType($results)
     {
-        return $this->modelsToSearchThrough
+        return $this->models
             ->keyBy->getModelKey()
             ->map(function (ModelToSearchThrough $modelToSearchThrough, $key) use ($results) {
                 $ids = $results->pluck($key)->filter();
@@ -971,7 +876,7 @@ class Searcher
      */
     protected function getFirstModelConnection()
     {
-        $firstModel = $this->modelsToSearchThrough->first();
+        $firstModel = $this->models->first();
 
         if (!$firstModel) {
             throw new \RuntimeException('No models have been added to search through.');
