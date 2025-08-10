@@ -15,11 +15,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
-use ProtoneMedia\LaravelCrossEloquentSearch\Contracts\SearcherContract;
 use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\ValueObjects\OrderDirection;
 
-class Searcher implements SearcherContract
+class Searcher
 {
     use Conditionable;
 

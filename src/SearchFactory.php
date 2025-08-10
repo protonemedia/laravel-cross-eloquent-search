@@ -4,9 +4,8 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Traits\ForwardsCalls;
-use ProtoneMedia\LaravelCrossEloquentSearch\Contracts\SearcherContract;
 
-class SearchFactory implements SearcherContract
+class SearchFactory
 {
     use ForwardsCalls;
 
@@ -21,7 +20,7 @@ class SearchFactory implements SearcherContract
     /**
      * Add a model to search through.
      */
-    public function add($query, $columns = null, string $orderByColumn = null): SearcherContract
+    public function add($query, $columns = null, string $orderByColumn = null): Searcher
     {
         return $this->new()->add($query, $columns, $orderByColumn);
     }
@@ -29,7 +28,7 @@ class SearchFactory implements SearcherContract
     /**
      * Add a full-text searchable model.
      */
-    public function addFullText($query, $columns = null, array $options = [], string $orderByColumn = null): SearcherContract
+    public function addFullText($query, $columns = null, array $options = [], string $orderByColumn = null): Searcher
     {
         return $this->new()->addFullText($query, $columns, $options, $orderByColumn);
     }
@@ -37,7 +36,7 @@ class SearchFactory implements SearcherContract
     /**
      * Add multiple models at once.
      */
-    public function addMany(array $queries): SearcherContract
+    public function addMany(array $queries): Searcher
     {
         return $this->new()->addMany($queries);
     }
@@ -45,7 +44,7 @@ class SearchFactory implements SearcherContract
     /**
      * Set the order by column for the most recently added model.
      */
-    public function orderBy(string $orderByColumn): SearcherContract
+    public function orderBy(string $orderByColumn): Searcher
     {
         return $this->new()->orderBy($orderByColumn);
     }
@@ -53,7 +52,7 @@ class SearchFactory implements SearcherContract
     /**
      * Order results in ascending order.
      */
-    public function orderByAsc(): SearcherContract
+    public function orderByAsc(): Searcher
     {
         return $this->new()->orderByAsc();
     }
@@ -61,7 +60,7 @@ class SearchFactory implements SearcherContract
     /**
      * Order results in descending order.
      */
-    public function orderByDesc(): SearcherContract
+    public function orderByDesc(): Searcher
     {
         return $this->new()->orderByDesc();
     }
@@ -69,7 +68,7 @@ class SearchFactory implements SearcherContract
     /**
      * Order results by relevance.
      */
-    public function orderByRelevance(): SearcherContract
+    public function orderByRelevance(): Searcher
     {
         return $this->new()->orderByRelevance();
     }
@@ -77,7 +76,7 @@ class SearchFactory implements SearcherContract
     /**
      * Order results by model type.
      */
-    public function orderByModel($modelClasses): SearcherContract
+    public function orderByModel($modelClasses): Searcher
     {
         return $this->new()->orderByModel($modelClasses);
     }
@@ -85,7 +84,7 @@ class SearchFactory implements SearcherContract
     /**
      * Configure wildcard behavior.
      */
-    public function beginWithWildcard(bool $state = true): SearcherContract
+    public function beginWithWildcard(bool $state = true): Searcher
     {
         return $this->new()->beginWithWildcard($state);
     }
@@ -93,7 +92,7 @@ class SearchFactory implements SearcherContract
     /**
      * Configure wildcard behavior.
      */
-    public function endWithWildcard(bool $state = true): SearcherContract
+    public function endWithWildcard(bool $state = true): Searcher
     {
         return $this->new()->endWithWildcard($state);
     }
@@ -101,7 +100,7 @@ class SearchFactory implements SearcherContract
     /**
      * Enable case-insensitive searching.
      */
-    public function ignoreCase(bool $state = true): SearcherContract
+    public function ignoreCase(bool $state = true): Searcher
     {
         return $this->new()->ignoreCase($state);
     }
@@ -109,7 +108,7 @@ class SearchFactory implements SearcherContract
     /**
      * Enable sounds like searching.
      */
-    public function soundsLike(bool $state = true): SearcherContract
+    public function soundsLike(bool $state = true): Searcher
     {
         return $this->new()->soundsLike($state);
     }
@@ -117,7 +116,7 @@ class SearchFactory implements SearcherContract
     /**
      * Configure term parsing.
      */
-    public function parseTerm(bool $state = true): SearcherContract
+    public function parseTerm(bool $state = true): Searcher
     {
         return $this->new()->parseTerm($state);
     }
@@ -125,7 +124,7 @@ class SearchFactory implements SearcherContract
     /**
      * Configure pagination.
      */
-    public function paginate(int $perPage = 15, string $pageName = 'page', int $page = null): SearcherContract
+    public function paginate(int $perPage = 15, string $pageName = 'page', int $page = null): Searcher
     {
         return $this->new()->paginate($perPage, $pageName, $page);
     }
@@ -133,7 +132,7 @@ class SearchFactory implements SearcherContract
     /**
      * Configure simple pagination.
      */
-    public function simplePaginate(int $perPage = 15, string $pageName = 'page', int $page = null): SearcherContract
+    public function simplePaginate(int $perPage = 15, string $pageName = 'page', int $page = null): Searcher
     {
         return $this->new()->simplePaginate($perPage, $pageName, $page);
     }
@@ -141,7 +140,7 @@ class SearchFactory implements SearcherContract
     /**
      * Include model type in results.
      */
-    public function includeModelType(string $key = 'type'): SearcherContract
+    public function includeModelType(string $key = 'type'): Searcher
     {
         return $this->new()->includeModelType($key);
     }

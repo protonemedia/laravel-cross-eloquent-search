@@ -3,7 +3,6 @@
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
-use ProtoneMedia\LaravelCrossEloquentSearch\Contracts\SearcherContract;
 
 class ServiceProvider extends BaseServiceProvider
 {
@@ -12,12 +11,8 @@ class ServiceProvider extends BaseServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(SearcherContract::class, function ($app) {
-            return new SearchFactory;
-        });
-
         $this->app->singleton('laravel-cross-eloquent-search', function ($app) {
-            return $app[SearcherContract::class];
+            return new SearchFactory;
         });
     }
 
@@ -27,7 +22,6 @@ class ServiceProvider extends BaseServiceProvider
     public function provides(): array
     {
         return [
-            SearcherContract::class,
             'laravel-cross-eloquent-search',
         ];
     }
