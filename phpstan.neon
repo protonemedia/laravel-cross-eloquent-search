@@ -1,0 +1,11 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: max
+    paths:
+        - src
+    excludePaths:
+        - tests
+    editorUrl: 'phpstorm://open?file=%%file%%&line=%%line%%'
+    reportUnmatchedIgnoredErrors: false

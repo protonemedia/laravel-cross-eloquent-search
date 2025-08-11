@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
@@ -11,13 +13,13 @@ class ServiceProvider extends BaseServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton('laravel-cross-eloquent-search', function ($app) {
-            return new SearchFactory;
-        });
+        $this->app->singleton('laravel-cross-eloquent-search', SearchFactory::class);
     }
 
     /**
      * Get the services provided by the provider.
+     *
+     * @return array<int, string>
      */
     public function provides(): array
     {

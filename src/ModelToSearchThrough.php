@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
@@ -7,80 +9,47 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-class ModelToSearchThrough
+readonly class ModelToSearchThrough
 {
     /**
-     * Builder to search through.
+     * @param  Builder<Model>  $builder  Builder to search through
+     * @param  Collection<int, string>  $columns  The columns to search through
+     * @param  string  $orderByColumn  Order column
+     * @param  int  $key  Unique key of this instance
+     * @param  bool  $fullText  Full-text search
+     * @param  array<string, mixed>  $fullTextOptions  Full-text search options
+     * @param  string|null  $fullTextRelation  Full-text through relation
      */
-    protected Builder $builder;
+    public function __construct(
+        protected Builder $builder,
+        protected Collection $columns,
+        protected string $orderByColumn,
+        protected int $key,
+        protected bool $fullText = false,
+        protected array $fullTextOptions = [],
+        protected ?string $fullTextRelation = null,
+    ) {}
 
     /**
-     * The columns to search through.
-     */
-    protected Collection $columns;
-
-    /**
-     * Order column.
-     */
-    protected string $orderByColumn;
-
-    /**
-     * Unique key of this instance.
-     */
-    protected int $key;
-
-    /**
-     * Full-text search.
-     */
-    protected bool $fullText;
-
-    /**
-     * Full-text search options
-     */
-    protected array $fullTextOptions = [];
-
-    /**
-     * Full-text through relation.
-     */
-    protected ?string $fullTextRelation = null;
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param \Illuminate\Support\Collection $columns
-     * @param string $orderByColumn
-     * @param integer $key
-     * @param bool $fullText
-     * @param array $fullTextOptions
-     * @param string $fullTextRelation
-     */
-    public function __construct(Builder $builder, Collection $columns, string $orderByColumn, int $key, bool $fullText = false, array $fullTextOptions = [], string $fullTextRelation = null)
-    {
-        $this->builder          = $builder;
-        $this->columns          = $columns;
-        $this->orderByColumn    = $orderByColumn;
-        $this->key              = $key;
-        $this->fullText         = $fullText;
-        $this->fullTextOptions  = $fullTextOptions;
-        $this->fullTextRelation = $fullTextRelation;
-    }
-
-    /**
-     * Setter for the orderBy column.
-     *
-     * @param string $orderByColumn
-     * @return self
+     * Create a new instance with a different orderBy column.
      */
     public function orderByColumn(string $orderByColumn): self
     {
-        $this->orderByColumn = $orderByColumn;
-
-        return $this;
+        return new self(
+            $this->builder,
+            $this->columns,
+            $orderByColumn,
+            $this->key,
+            $this->fullText,
+            $this->fullTextOptions,
+            $this->fullTextRelation
+        );
     }
 
     /**
      * Get a cloned instance of the builder.
      *
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return Builder<Model>
      */
     public function getFreshBuilder(): Builder
     {
@@ -90,7 +59,7 @@ class ModelToSearchThrough
     /**
      * Get a collection with all columns or relations to search through.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Collection<int, string>
      */
     public function getColumns(): Collection
     {
@@ -98,32 +67,36 @@ class ModelToSearchThrough
     }
 
     /**
-     * Set a collection with all columns or relations to search through.
+     * Create a new instance with different columns to search through.
      *
-     * @return $this
+     * @param  Collection<int, string>  $columns
      */
     public function setColumns(Collection $columns): self
     {
-        $this->columns = $columns;
-
-        return $this;
+        return new self(
+            $this->builder,
+            $columns,
+            $this->orderByColumn,
+            $this->key,
+            $this->fullText,
+            $this->fullTextOptions,
+            $this->fullTextRelation
+        );
     }
 
     /**
      * Get a collection with all qualified columns
      * to search through.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Collection<int, string>
      */
     public function getQualifiedColumns(): Collection
     {
-        return $this->columns->map(fn ($column) => $this->qualifyColumn($column));
+        return $this->columns->map(fn (string $column) => $this->qualifyColumn($column));
     }
 
     /**
      * Get the model instance being queried.
-     *
-     * @return \Illuminate\Database\Eloquent\Model
      */
     public function getModel(): Model
     {
@@ -133,8 +106,7 @@ class ModelToSearchThrough
     /**
      * Generates a key for the model with a suffix.
      *
-     * @param string $suffix
-     * @return string
+     * @param  string  $suffix
      */
     public function getModelKey($suffix = 'key'): string
     {
@@ -147,9 +119,6 @@ class ModelToSearchThrough
 
     /**
      * Qualify a column by the model instance.
-     *
-     * @param string $column
-     * @return string
      */
     public function qualifyColumn(string $column): string
     {
@@ -158,8 +127,6 @@ class ModelToSearchThrough
 
     /**
      * Get the qualified key name.
-     *
-     * @return string
      */
     public function getQualifiedKeyName(): string
     {
@@ -168,8 +135,6 @@ class ModelToSearchThrough
 
     /**
      * Get the qualified order name.
-     *
-     * @return string
      */
     public function getQualifiedOrderByColumnName(): string
     {
@@ -178,8 +143,6 @@ class ModelToSearchThrough
 
     /**
      * Full-text search.
-     *
-     * @return boolean
      */
     public function isFullTextSearch(): bool
     {
@@ -189,7 +152,7 @@ class ModelToSearchThrough
     /**
      * Full-text search options.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function getFullTextOptions(): array
     {
@@ -198,8 +161,6 @@ class ModelToSearchThrough
 
     /**
      * Full-text through relation.
-     *
-     * @return string|null
      */
     public function getFullTextRelation(): ?string
     {
@@ -207,43 +168,54 @@ class ModelToSearchThrough
     }
 
     /**
-     * Full-text through relation.
-     *
-     * @return $this
+     * Create a new instance with a different full-text relation.
      */
     public function setFullTextRelation(?string $fullTextRelation = null): self
     {
-        $this->fullTextRelation = $fullTextRelation;
-
-        return $this;
+        return new self(
+            $this->builder,
+            $this->columns,
+            $this->orderByColumn,
+            $this->key,
+            $this->fullText,
+            $this->fullTextOptions,
+            $fullTextRelation
+        );
     }
 
     /**
      * Clone the current instance.
-     *
-     * @return static
      */
-    public function clone(): static
+    public function clone(): self
     {
-        return new static($this->builder, $this->columns, $this->orderByColumn, $this->key, $this->fullText, $this->fullTextOptions, $this->fullTextRelation);
+        return new self($this->builder, $this->columns, $this->orderByColumn, $this->key, $this->fullText, $this->fullTextOptions, $this->fullTextRelation);
     }
 
     /**
      * Split the current instance into multiple based on relation search.
      *
-     * @return \Illuminate\Support\Collection
+     * @return Collection<int, self>
      */
     public function toGroupedCollection(): Collection
     {
         if ($this->columns->all() === $this->columns->flatten()->all()) {
-            return Collection::wrap($this);
+            /** @var Collection<int, self> $wrappedCollection */
+            $wrappedCollection = Collection::wrap($this);
+
+            return $wrappedCollection;
         }
 
+        /** @var Collection<int, self> $collection */
         $collection = Collection::make();
 
-        foreach ($this->columns as $relation => $columns) {
+        /** @var array<int|string, mixed> $columnsArray */
+        $columnsArray = $this->columns->toArray();
+
+        foreach ($columnsArray as $relation => $columns) {
+            /** @var Collection<int, string> $wrappedColumns */
+            $wrappedColumns = Collection::wrap($columns);
             $collection->push(
-                $this->clone()->setColumns(Collection::wrap($columns))->setFullTextRelation($relation)
+                $this->clone()->setColumns($wrappedColumns)->setFullTextRelation(is_int($relation) ? null : (string) $relation)
             );
         }
 

@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
@@ -10,8 +12,6 @@ class SearchFactory
 
     /**
      * Returns a new Searcher instance.
-     *
-     * @return \ProtoneMedia\LaravelCrossEloquentSearch\Searcher
      */
     public function new(): Searcher
     {
@@ -21,11 +21,10 @@ class SearchFactory
     /**
      * Handle dynamic method calls into a new Searcher instance.
      *
-     * @param  string  $method
-     * @param  array  $parameters
+     * @param  array<int, mixed>  $parameters
      * @return mixed
      */
-    public function __call($method, $parameters)
+    public function __call(string $method, array $parameters)
     {
         return $this->forwardCallTo(
             $this->new(),
