@@ -14,7 +14,7 @@ jobs:
         php: [8.4, 8.3, 8.2]
         laravel: ["11.*", "12.*"]
         dependency-version: [prefer-lowest, prefer-stable]
-        db_connection: [mysql, sqlite]
+        db_connection: [mysql, pgsql, sqlite]
         include:
           - laravel: 11.*
             testbench: ^9.10
@@ -35,6 +35,20 @@ jobs:
         ports:
           - 3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: protone_media_db_test
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: protone_media_db_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -50,7 +64,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, mysql, mysqli, pdo_mysql
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, mysql, mysqli, pdo_mysql, pgsql, pdo_pgsql
           coverage: none
 
       - name: Install dependencies
@@ -65,4 +79,4 @@ jobs:
           DB_DATABASE: protone_media_db_test
           DB_USERNAME: protone_media_db_test
           DB_PASSWORD: secret
-          DB_PORT: ${{ job.services.mysql.ports[3306] }}
+          DB_PORT: ${{ matrix.db_connection == 'pgsql' && 5432 || job.services.mysql.ports[3306] }}

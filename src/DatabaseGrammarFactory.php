@@ -7,6 +7,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 use Illuminate\Database\Connection;
 use ProtoneMedia\LaravelCrossEloquentSearch\Exceptions\InvalidGrammarException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\MySqlSearchGrammar;
+use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\PostgreSqlSearchGrammar;
 use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\SearchGrammarInterface;
 use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\SQLiteSearchGrammar;
 
@@ -15,7 +16,7 @@ use ProtoneMedia\LaravelCrossEloquentSearch\Grammars\SQLiteSearchGrammar;
  *
  * This factory provides database-agnostic access to search functionality by
  * creating the appropriate grammar implementation based on the database driver.
- * Currently supports MySQL/MariaDB and SQLite.
+ * Currently supports MySQL/MariaDB, PostgreSQL, and SQLite.
  */
 class DatabaseGrammarFactory
 {
@@ -32,6 +33,8 @@ class DatabaseGrammarFactory
             case 'mysql':
             case 'mariadb':
                 return new MySqlSearchGrammar($connection);
+            case 'pgsql':
+                return new PostgreSqlSearchGrammar($connection);
             case 'sqlite':
                 return new SQLiteSearchGrammar($connection);
             default:

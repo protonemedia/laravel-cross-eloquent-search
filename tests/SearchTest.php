@@ -225,9 +225,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_use_the_sounds_like_operator()
     {
-        // Skip on SQLite since it doesn't support SOUNDS LIKE
-        if (config('database.default') === 'sqlite') {
-            $this->markTestSkipped('SOUNDS LIKE operator not supported on SQLite');
+        // Skip on SQLite and PostgreSQL since they don't support SOUNDS LIKE by default
+        if (in_array(config('database.default'), ['sqlite', 'pgsql'])) {
+            $this->markTestSkipped('SOUNDS LIKE operator not supported on '.config('database.default'));
         }
 
         Video::create(['title' => 'laravel']);

@@ -60,6 +60,22 @@ class TestCase extends OrchestraTestCase
             ]) : [],
         ]);
 
+        // Configure PostgreSQL
+        $this->app['config']->set('database.connections.pgsql', [
+            'driver' => 'pgsql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'search_test'),
+            'username' => env('DB_USERNAME', 'protone_media_db_test'),
+            'password' => env('DB_PASSWORD', 'secret'),
+            'charset' => 'utf8',
+            'prefix' => $prefix,
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ]);
+
         // Set default connection based on DB_CONNECTION env var
         $this->app['config']->set('database.default', $connection);
 
