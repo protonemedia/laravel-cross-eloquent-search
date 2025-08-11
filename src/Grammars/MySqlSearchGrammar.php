@@ -13,17 +13,14 @@ use Illuminate\Database\Query\Grammars\MySqlGrammar;
  */
 class MySqlSearchGrammar implements SearchGrammarInterface
 {
-    protected Connection $connection;
-
     protected MySqlGrammar $grammar;
 
     /**
      * Create a new MySQL search grammar instance.
      */
-    public function __construct(Connection $connection)
+    public function __construct(protected Connection $connection)
     {
-        $this->connection = $connection;
-        $this->grammar = new MySqlGrammar($connection);
+        $this->grammar = new MySqlGrammar($this->connection);
     }
 
     public function wrap(string|Expression $value): string

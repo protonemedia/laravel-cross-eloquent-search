@@ -13,17 +13,14 @@ use Illuminate\Database\Query\Grammars\SQLiteGrammar;
  */
 class SQLiteSearchGrammar implements SearchGrammarInterface
 {
-    protected Connection $connection;
-
     protected SQLiteGrammar $grammar;
 
     /**
      * Create a new SQLite search grammar instance.
      */
-    public function __construct(Connection $connection)
+    public function __construct(protected Connection $connection)
     {
-        $this->connection = $connection;
-        $this->grammar = new SQLiteGrammar($connection);
+        $this->grammar = new SQLiteGrammar($this->connection);
     }
 
     public function wrap(string|Expression $value): string
@@ -46,7 +43,7 @@ class SQLiteSearchGrammar implements SearchGrammarInterface
     {
         // SQLite requires at least 2 arguments for COALESCE
         if (count($values) === 1) {
-            return (string) $values[0];
+            return $values[0];
         }
 
         $valueList = implode(',', $values);

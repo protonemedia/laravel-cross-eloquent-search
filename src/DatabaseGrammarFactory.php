@@ -29,16 +29,11 @@ class DatabaseGrammarFactory
     {
         $driver = $connection->getDriverName();
 
-        switch ($driver) {
-            case 'mysql':
-            case 'mariadb':
-                return new MySqlSearchGrammar($connection);
-            case 'pgsql':
-                return new PostgreSqlSearchGrammar($connection);
-            case 'sqlite':
-                return new SQLiteSearchGrammar($connection);
-            default:
-                throw InvalidGrammarException::driverNotSupported($driver);
-        }
+        return match ($driver) {
+            'mysql', 'mariadb' => new MySqlSearchGrammar($connection),
+            'pgsql' => new PostgreSqlSearchGrammar($connection),
+            'sqlite' => new SQLiteSearchGrammar($connection),
+            default => throw InvalidGrammarException::driverNotSupported($driver),
+        };
     }
 }

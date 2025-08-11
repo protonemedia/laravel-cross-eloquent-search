@@ -6,6 +6,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -13,7 +14,7 @@ readonly class ModelToSearchThrough
 {
     /**
      * @param  Builder<Model>  $builder  Builder to search through
-     * @param  Collection<int, string>  $columns  The columns to search through
+     * @param  Collection<int, string|Expression>  $columns  The columns to search through
      * @param  string  $orderByColumn  Order column
      * @param  int  $key  Unique key of this instance
      * @param  bool  $fullText  Full-text search
@@ -59,7 +60,7 @@ readonly class ModelToSearchThrough
     /**
      * Get a collection with all columns or relations to search through.
      *
-     * @return Collection<int, string>
+     * @return Collection<int, string|Expression>
      */
     public function getColumns(): Collection
     {
@@ -69,7 +70,7 @@ readonly class ModelToSearchThrough
     /**
      * Create a new instance with different columns to search through.
      *
-     * @param  Collection<int, string>  $columns
+     * @param  Collection<int, string|Expression>  $columns
      */
     public function setColumns(Collection $columns): self
     {
@@ -88,11 +89,11 @@ readonly class ModelToSearchThrough
      * Get a collection with all qualified columns
      * to search through.
      *
-     * @return Collection<int, string>
+     * @return Collection<int, string|Expression>
      */
     public function getQualifiedColumns(): Collection
     {
-        return $this->columns->map(fn (string $column) => $this->qualifyColumn($column));
+        return $this->columns->map(fn($column): \Illuminate\Database\Query\Expression|string => $column instanceof Expression ? $column : $this->qualifyColumn($column));
     }
 
     /**
@@ -123,6 +124,14 @@ readonly class ModelToSearchThrough
     public function qualifyColumn(string $column): string
     {
         return $this->getModel()->qualifyColumn($column);
+    }
+
+    /**
+     * Check if a column is a raw expression.
+     */
+    public function isRawExpression(mixed $column): bool
+    {
+        return $column instanceof Expression;
     }
 
     /**

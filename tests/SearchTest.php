@@ -15,7 +15,7 @@ use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
 class SearchTest extends TestCase
 {
     /** @test */
-    public function it_can_search_two_models_and_orders_by_updated_at_by_default()
+    public function it_can_search_two_models_and_orders_by_updated_at_by_default(): void
     {
         Carbon::setTestNow(now());
 
@@ -44,12 +44,12 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_search_in_multiple_columns()
+    public function it_can_search_in_multiple_columns(): void
     {
-        $postA = Post::create(['title' => 'foo']);
+        Post::create(['title' => 'foo']);
         $postB = Post::create(['title' => 'bar']);
-        $videoA = Video::create(['title' => 'foo']);
-        $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
         $results = Search::add(Post::class, 'title')
             ->add(Video::class, ['title', 'subtitle'])
@@ -61,12 +61,12 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_count_the_results()
+    public function it_can_count_the_results(): void
     {
-        $postA = Post::create(['title' => 'foo']);
-        $postB = Post::create(['title' => 'bar']);
-        $videoA = Video::create(['title' => 'foo']);
-        $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
+        Post::create(['title' => 'foo']);
+        Post::create(['title' => 'bar']);
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
         $count = Search::add(Post::class, 'title')
             ->add(Video::class, ['title', 'subtitle'])
@@ -76,14 +76,14 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_respects_table_prefixes()
+    public function it_respects_table_prefixes(): void
     {
         $this->initDatabase('prefix_');
 
-        $postA = Post::create(['title' => 'foo']);
-        $postB = Post::create(['title' => 'bar']);
-        $videoA = Video::create(['title' => 'foo']);
-        $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
+        Post::create(['title' => 'foo']);
+        Post::create(['title' => 'bar']);
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
         $count = Search::add(Post::class, 'title')
             ->add(Video::class, ['title', 'subtitle'])
@@ -93,12 +93,12 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_search_for_a_phrase()
+    public function it_can_search_for_a_phrase(): void
     {
-        $postA = Post::create(['title' => 'foo']);
+        Post::create(['title' => 'foo']);
         $postB = Post::create(['title' => 'bar bar']);
-        $videoA = Video::create(['title' => 'foo']);
-        $videoB = Video::create(['title' => 'bar']);
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'bar']);
 
         $results = Search::add(Post::class, 'title')
             ->add(Video::class, 'title')
@@ -110,12 +110,12 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_has_an_option_to_dont_split_the_search_term()
+    public function it_has_an_option_to_dont_split_the_search_term(): void
     {
-        $postA = Post::create(['title' => 'foo']);
+        Post::create(['title' => 'foo']);
         $postB = Post::create(['title' => 'bar bar']);
-        $videoA = Video::create(['title' => 'foo']);
-        $videoB = Video::create(['title' => 'bar']);
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'bar']);
 
         $results = Search::add(Post::class, 'title')
             ->add(Video::class, 'title')
@@ -128,7 +128,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_has_an_option_to_ignore_the_case()
+    public function it_has_an_option_to_ignore_the_case(): void
     {
         Post::create(['title' => 'foo']);
         Post::create(['title' => 'bar bar']);
@@ -146,7 +146,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_has_a_method_to_parse_the_terms()
+    public function it_has_a_method_to_parse_the_terms(): void
     {
         $this->assertEquals(['foo'], Search::parseTerms('foo')->all());
         $this->assertEquals(['foo'], Search::parseTerms('foo ')->all());
@@ -156,7 +156,7 @@ class SearchTest extends TestCase
 
         $array = [];
 
-        Search::parseTerms('foo bar', function ($term, $key) use (&$array) {
+        Search::parseTerms('foo bar', function (string $term, string $key) use (&$array): void {
             $array[] = $key.$term;
         });
 
@@ -164,7 +164,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_search_without_a_term()
+    public function it_can_search_without_a_term(): void
     {
         Post::create(['title' => 'foo']);
         Post::create(['title' => 'bar']);
@@ -180,7 +180,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_conditionally_add_queries()
+    public function it_can_conditionally_add_queries(): void
     {
         $postA = Post::create(['title' => 'foo']);
         Post::create(['title' => 'bar']);
@@ -188,8 +188,8 @@ class SearchTest extends TestCase
         Video::create(['title' => 'bar']);
 
         $results = Search::new()
-            ->when(true, fn (Searcher $searcher) => $searcher->add(Post::class, 'title'))
-            ->when(false, fn (Searcher $searcher) => $searcher->add(Video::class, 'title', 'published_at'))
+            ->when(true, fn (Searcher $searcher): \ProtoneMedia\LaravelCrossEloquentSearch\Searcher => $searcher->add(Post::class, 'title'))
+            ->when(false, fn (Searcher $searcher): \ProtoneMedia\LaravelCrossEloquentSearch\Searcher => $searcher->add(Video::class, 'title', 'published_at'))
             ->search('foo');
 
         $this->assertCount(1, $results);
@@ -197,7 +197,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_add_many_models_at_once()
+    public function it_can_add_many_models_at_once(): void
     {
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
@@ -214,7 +214,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_search_on_the_left_side_of_the_term()
+    public function it_can_search_on_the_left_side_of_the_term(): void
     {
         Video::create(['title' => 'foo']);
 
@@ -223,7 +223,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_use_the_sounds_like_operator()
+    public function it_can_use_the_sounds_like_operator(): void
     {
         // Skip on SQLite and PostgreSQL since they don't support SOUNDS LIKE by default
         if (in_array(config('database.default'), ['sqlite', 'pgsql'])) {
@@ -237,7 +237,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_search_twice_in_the_same_table()
+    public function it_can_search_twice_in_the_same_table(): void
     {
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
@@ -253,12 +253,12 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_lets_you_specify_a_custom_order_by_column_and_direction()
+    public function it_lets_you_specify_a_custom_order_by_column_and_direction(): void
     {
         $postA = Post::create(['title' => 'foo', 'published_at' => now()]);
-        $postB = Post::create(['title' => 'bar']);
+        Post::create(['title' => 'bar']);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDay()]);
-        $videoB = Video::create(['title' => 'bar']);
+        Video::create(['title' => 'bar']);
 
         $results = Search::add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
@@ -272,12 +272,12 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_accepts_a_query_builder()
+    public function it_accepts_a_query_builder(): void
     {
-        $postA = Post::create(['title' => 'foo']);
-        $postB = Post::create(['title' => 'foo']);
+        Post::create(['title' => 'foo']);
+        Post::create(['title' => 'foo']);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDay()]);
-        $videoB = Video::create(['title' => 'foo']);
+        Video::create(['title' => 'foo']);
 
         $results = Search::add(Post::whereNotNull('published_at'), 'title')
             ->add(Video::whereNotNull('published_at'), 'title')
@@ -289,19 +289,19 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_paginate_the_results()
+    public function it_can_paginate_the_results(): void
     {
         $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
         $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
         $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
 
-        $search = Search::add(Post::class, 'title', 'published_at')
+        $searcher = Search::add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $resultsPage1 = $search->paginate(2, 'page', 1)->search('foo');
-        $resultsPage2 = $search->paginate(2, 'page', 2)->search('foo');
+        $resultsPage1 = $searcher->paginate(2, 'page', 1)->search('foo');
+        $resultsPage2 = $searcher->paginate(2, 'page', 2)->search('foo');
 
         $this->assertInstanceOf(LengthAwarePaginator::class, $resultsPage1);
         $this->assertInstanceOf(LengthAwarePaginator::class, $resultsPage2);
@@ -317,7 +317,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_eager_load_relations()
+    public function it_can_eager_load_relations(): void
     {
         $postA = Post::create(['title' => 'foo']);
         $postB = Post::create(['title' => 'bar']);
@@ -336,7 +336,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_search_through_relations()
+    public function it_can_search_through_relations(): void
     {
         $videoA = Video::create(['title' => 'foo1']);
         $videoB = Video::create(['title' => 'bar']);
@@ -377,7 +377,7 @@ class SearchTest extends TestCase
 
         $this->assertCount(4, $results);
 
-        $results = $results->map(fn ($model) => class_basename($model).$model->getKey());
+        $results = $results->map(fn ($model): string => class_basename($model).$model->getKey());
 
         $this->assertTrue($results->contains('Video1'));    // because foo1
         $this->assertTrue($results->contains('Video2'));    // because comment4
@@ -386,10 +386,10 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_doesnt_add_term_constraints_when_the_search_query_is_empty()
+    public function it_doesnt_add_term_constraints_when_the_search_query_is_empty(): void
     {
         $videoA = Video::create(['title' => 'foo']);
-        $videoB = Video::create(['title' => 'bar']);
+        Video::create(['title' => 'bar']);
 
         $videoA->posts()->create(['title' => 'far']);
 
@@ -401,11 +401,11 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_sort_by_model_order()
+    public function it_can_sort_by_model_order(): void
     {
         $post = Post::create(['title' => 'foo']);
-        $comment = $post->comments()->create(['body' => 'foo']);
-        $video = Video::create(['title' => 'foo']);
+        $post->comments()->create(['body' => 'foo']);
+        Video::create(['title' => 'foo']);
 
         $results = Search::new()
             ->add(Post::class, ['title'])
@@ -447,11 +447,11 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_respects_the_regular_order_when_ordering_by_model_type()
+    public function it_respects_the_regular_order_when_ordering_by_model_type(): void
     {
         $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(4)]);
-        $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
-        $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        Post::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+        Video::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
         $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
 
         $results = Search::new()
@@ -467,13 +467,13 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_respects_the_relevance_order_when_ordering_by_model_type()
+    public function it_respects_the_relevance_order_when_ordering_by_model_type(): void
     {
-        $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
+        Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
         $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
 
         $postA = Post::create(['title' => 'Apple introduces iPhone 13 and iPhone 13 mini']);
-        $postB = Post::create(['title' => 'Apple unveils new iPad mini with breakthrough performance in stunning new design']);
+        Post::create(['title' => 'Apple unveils new iPad mini with breakthrough performance in stunning new design']);
 
         $results = Search::new()
             ->add(Video::class, ['title', 'subtitle'])
@@ -492,17 +492,17 @@ class SearchTest extends TestCase
     public function it_cant_order_by_relevance_when_searching_through_nested_relationships()
     {
         $video = Video::create(['title' => 'foo']);
-        $post = $video->posts()->create(['title' => 'bar']);
+        $video->posts()->create(['title' => 'bar']);
 
-        $search = Search::new()
+        $searcher = Search::new()
             ->beginWithWildcard(false)
             ->endWithWildcard(false)
             ->add(Video::class, 'posts.title')
             ->orderByRelevance();
 
         try {
-            $search->search('bar');
-        } catch (OrderByRelevanceException $e) {
+            $searcher->search('bar');
+        } catch (OrderByRelevanceException) {
             return $this->assertTrue(true);
         }
 
@@ -510,9 +510,9 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_sort_by_word_occurrence()
+    public function it_can_sort_by_word_occurrence(): void
     {
-        $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
+        Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
         $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
 
         $results = Search::new()
@@ -526,7 +526,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_doesnt_fail_when_the_terms_are_empty()
+    public function it_doesnt_fail_when_the_terms_are_empty(): void
     {
         Video::create(['title' => 'bar']);
         Video::create(['title' => 'foo']);
@@ -540,45 +540,45 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_uses_length_aware_paginator_by_default()
+    public function it_uses_length_aware_paginator_by_default(): void
     {
-        $search = Search::add(Post::class, 'title', 'published_at')
+        $searcher = Search::add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $results = $search->paginate()->search('foo');
+        $results = $searcher->paginate()->search('foo');
 
         $this->assertInstanceOf(LengthAwarePaginator::class, $results);
     }
 
     /** @test */
-    public function it_can_use_simple_paginator()
+    public function it_can_use_simple_paginator(): void
     {
-        $search = Search::new()
+        $searcher = Search::new()
             ->add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $results = $search->simplePaginate()->search('foo');
+        $results = $searcher->simplePaginate()->search('foo');
 
         $this->assertInstanceOf(Paginator::class, $results);
     }
 
     /** @test */
-    public function it_can_simple_paginate_the_results()
+    public function it_can_simple_paginate_the_results(): void
     {
         $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
         $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
         $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
 
-        $search = Search::new()
+        $searcher = Search::new()
             ->add(Post::class, 'title', 'published_at')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc();
 
-        $resultsPage1 = $search->simplePaginate(2, 'page', 1)->search('foo');
-        $resultsPage2 = $search->simplePaginate(2, 'page', 2)->search('foo');
+        $resultsPage1 = $searcher->simplePaginate(2, 'page', 1)->search('foo');
+        $resultsPage2 = $searcher->simplePaginate(2, 'page', 2)->search('foo');
 
         $this->assertInstanceOf(Paginator::class, $resultsPage1);
         $this->assertInstanceOf(Paginator::class, $resultsPage2);
@@ -593,7 +593,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_includes_a_model_identifier_to_search_results()
+    public function it_includes_a_model_identifier_to_search_results(): void
     {
         Post::create(['title' => 'bar']);
         Video::create(['title' => 'baz']);
@@ -610,7 +610,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_includes_a_custom_model_identifier_to_search_results()
+    public function it_includes_a_custom_model_identifier_to_search_results(): void
     {
         Post::create(['title' => 'bar']);
         Video::create(['title' => 'baz']);
@@ -625,7 +625,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_supports_full_text_search()
+    public function it_supports_full_text_search(): void
     {
         // Skip on SQLite since Laravel doesn't support full-text search on SQLite
         if (config('database.default') === 'sqlite') {
@@ -635,10 +635,10 @@ class SearchTest extends TestCase
         $postB = Post::create(['title' => 'Tailwind Framework']);
 
         $blogA = Blog::create(['title' => 'Laravel Framework', 'subtitle' => 'PHP', 'body' => 'Ad nostrud adipisicing deserunt labore reprehenderit ']);
-        $blogB = Blog::create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
+        Blog::create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
 
         $pageA = Page::create(['title' => 'Laravel Framework', 'subtitle' => 'PHP', 'body' => 'Ad nostrud adipisicing deserunt labore reprehenderit ']);
-        $pageB = Page::create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
+        Page::create(['title' => 'Tailwind Framework', 'subtitle' => 'CSS', 'body' => 'aute do commodo ea magna dolor cupidatat ullamco commodo.']);
 
         $results = Search::new()
             ->beginWithWildcard()
@@ -656,7 +656,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_supports_full_text_search_on_relations()
+    public function it_supports_full_text_search_on_relations(): void
     {
         // Skip on SQLite since Laravel doesn't support full-text search on SQLite
         if (config('database.default') === 'sqlite') {
@@ -687,13 +687,13 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_returns_data_consistently()
+    public function it_returns_data_consistently(): void
     {
         Carbon::setTestNow(now());
         $postA = Post::create(['title' => 'Laravel Framework']);
 
         Carbon::setTestNow(now()->addSecond());
-        $postB = Post::create(['title' => 'Tailwind Framework']);
+        Post::create(['title' => 'Tailwind Framework']);
 
         $this->assertEquals(2, Post::all()->count());
         $this->assertEquals(0, Blog::all()->count());
@@ -715,7 +715,7 @@ class SearchTest extends TestCase
     }
 
     /** @test */
-    public function it_can_conditionally_apply_ordering()
+    public function it_can_conditionally_apply_ordering(): void
     {
         Carbon::setTestNow(now());
         $postA = Post::create(['title' => 'foo']);
@@ -724,7 +724,7 @@ class SearchTest extends TestCase
         $postB = Post::create(['title' => 'foo2']);
 
         $results = Search::add(Post::class, 'title')
-            ->when(true, fn (Searcher $searcher) => $searcher->orderByDesc())
+            ->when(true, fn (Searcher $searcher): \ProtoneMedia\LaravelCrossEloquentSearch\Searcher => $searcher->orderByDesc())
             ->search('foo');
 
         $this->assertInstanceOf(Collection::class, $results);

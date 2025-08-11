@@ -25,6 +25,14 @@ class PostgreSqlSearchGrammar implements SearchGrammarInterface
 
     public function wrap(string|Expression $value): string
     {
+        // Handle JSON columns specially for PostgreSQL
+        if (is_string($value) && str_contains($value, '->>')) {
+            // Split the JSON column path for proper wrapping
+            [$table_column, $jsonPath] = explode('->>', $value, 2);
+            // For PostgreSQL, we need to cast string columns to JSON first when using JSON operators
+            return "(" . $this->grammar->wrap($table_column) . ")::json->>" . $jsonPath;
+        }
+        
         return $this->grammar->wrap($value);
     }
 
@@ -33,6 +41,17 @@ class PostgreSqlSearchGrammar implements SearchGrammarInterface
      */
     public function caseInsensitive(string $column): string
     {
+        // Handle JSON columns by casting to text first for PostgreSQL
+        if (str_contains($column, '->>')) {
+            // First cast the base column to JSON, then extract the value, then cast to text
+            $parts = explode('->>', $column, 2);
+            if (count($parts) === 2) {
+                $baseColumn = $parts[0];
+                $jsonPath = $parts[1];
+                return "LOWER(({$baseColumn})::json->>{$jsonPath}::text)";
+            }
+        }
+        
         return "LOWER({$column})";
     }
 
