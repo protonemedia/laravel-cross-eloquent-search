@@ -366,7 +366,7 @@ class Searcher
     {
         $callback = $callback ?: fn () => null;
 
-        return Collection::make(str_getcsv($terms, ' ', '"'))
+        return Collection::make(str_getcsv($terms, ' ', '"', "\\"))
             ->filter()
             ->values()
             ->when($callback !== null, function ($terms) use ($callback) {
