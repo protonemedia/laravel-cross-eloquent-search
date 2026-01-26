@@ -90,6 +90,19 @@ Search::new()
     ->search('howto');
 ```
 
+You can use the `tap` method to perform side effects or modify the searcher instance during the search configuration chain:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->tap(function ($searcher) {
+        // Perform side effects, logging, or modifications
+        Log::info('Search configuration', ['models' => $searcher->getModelsToSearchThrough()]);
+        $searcher->orderByDesc(); // Modify the searcher
+    })
+    ->search('laravel');
+```
+
 ### Wildcards
 
 By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to begin with as well, you can call the `beginWithWildcard` method. This will result in `%apple%` and `%ios%`.
