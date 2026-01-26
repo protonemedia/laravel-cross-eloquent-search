@@ -618,6 +618,27 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_tap_into_the_searcher_instance()
+    {
+
+        Carbon::setTestNow(now());
+        $postA = Post::create(['title' => 'foo']);
+
+        Carbon::setTestNow(now()->subDay());
+        $postB = Post::create(['title' => 'foo2']);
+
+        $results = Search::add(Post::class, 'title')
+            ->tap(fn (Searcher $searcher) => $searcher->orderByDesc())
+            ->search('foo');
+
+        $this->assertInstanceOf(Collection::class, $results);
+        $this->assertCount(2, $results);
+
+        $this->assertTrue($results->first()->is($postA));
+        $this->assertTrue($results->last()->is($postB));
+    }
+
+    /** @test */
     public function it_supports_full_text_search()
     {
         $postA = Post::create(['title' => 'Laravel Framework']);

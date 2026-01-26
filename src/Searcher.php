@@ -188,6 +188,19 @@ class Searcher
     }
 
     /**
+     * Tap into the searcher instance.
+     *
+     * @param callable $callback
+     * @return self
+     */
+    public function tap(callable $callback): self
+    {
+        $callback($this);
+
+        return $this;
+    }
+
+    /**
      * Add a model to search through.
      *
      * @param \Illuminate\Database\Eloquent\Builder|string $query
