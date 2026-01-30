@@ -14,10 +14,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
+use Illuminate\Support\Traits\Tappable;
 
 class Searcher
 {
-    use Conditionable;
+    use Conditionable, Tappable;
 
     /**
      * Collection of models to search through.
