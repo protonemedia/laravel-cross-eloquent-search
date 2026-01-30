@@ -718,4 +718,13 @@ class SearchTest extends TestCase
         $this->assertTrue($results->first()->is($postA));
         $this->assertTrue($results->last()->is($postB));
     }
+
+    public function it_can_perform_exact_match_search()
+    {
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'foobar']);
+        Video::create(['title' => 'barfoo']);
+
+        $this->assertCount(1, Search::add(Video::class, 'title')->exactMatch()->search('foo'));
+    }
 }

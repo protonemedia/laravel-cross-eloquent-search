@@ -307,6 +307,17 @@ class Searcher
     }
 
     /**
+     * Let's each search term be an exact match.
+     *
+     * @return self
+     */
+    public function exactMatch(): self {
+         $this->beginWithWildcard(false)->endWithWildcard(false);
+         $this->whereOperator = '=';
+
+         return $this;
+    }
+    /**
      * Use 'sounds like' operator instead of 'like'.
      *
      * @return self
