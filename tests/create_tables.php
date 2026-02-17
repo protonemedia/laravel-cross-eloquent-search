@@ -36,6 +36,8 @@ class CreateTables extends Migration
             $table->string('subtitle')->nullable();
             $table->date('published_at')->nullable();
             $table->timestamps();
+
+            $table->fullText('title');
         });
 
         Schema::create('blogs', function (Blueprint $table) {

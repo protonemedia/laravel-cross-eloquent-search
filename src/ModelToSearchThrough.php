@@ -252,10 +252,21 @@ class ModelToSearchThrough
         }
 
         $collection = Collection::make();
+        $directColumns = Collection::make();
 
         foreach ($this->columns as $relation => $columns) {
-            $collection->push(
-                $this->clone()->setColumns(Collection::wrap($columns))->setFullTextRelation($relation)
+            if (is_int($relation)) {
+                $directColumns->push($columns);
+            } else {
+                $collection->push(
+                    $this->clone()->setColumns(Collection::wrap($columns))->setFullTextRelation($relation)
+                );
+            }
+        }
+
+        if ($directColumns->isNotEmpty()) {
+            $collection->prepend(
+                $this->clone()->setColumns($directColumns)->setFullTextRelation(null)
             );
         }
 

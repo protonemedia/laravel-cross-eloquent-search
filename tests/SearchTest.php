@@ -738,4 +738,24 @@ class SearchTest extends TestCase
         $this->assertTrue($results->first()->is($postA));
         $this->assertTrue($results->last()->is($postB));
     }
+
+    /** @test */
+    public function it_supports_full_text_search_with_mixed_direct_and_relation_columns()
+    {
+        $videoA = Video::create(['title' => 'Laravel Framework']);
+        $videoB = Video::create(['title' => 'Tailwind CSS']);
+
+        $videoA->blogs()->create(['title' => 'Blog about PHP', 'subtitle' => 'Subtitle', 'body' => 'Body text']);
+        $videoB->blogs()->create(['title' => 'Blog about CSS', 'subtitle' => 'Subtitle', 'body' => 'Body text']);
+
+        $results = Search::new()
+            ->addFullText(Video::class, [
+                'title',
+                'blogs' => ['title', 'subtitle', 'body'],
+            ])
+            ->search('Laravel');
+
+        $this->assertCount(1, $results);
+        $this->assertTrue($results->first()->is($videoA));
+    }
 }
