@@ -13,6 +13,7 @@ jobs:
       matrix:
         php: [8.5, 8.4, 8.3, 8.2]
         laravel: ["11.*", "12.*"]
+        db: [mysql, sqlite]
         dependency-version: [prefer-lowest, prefer-stable]
         include:
           - laravel: 11.*
@@ -20,7 +21,7 @@ jobs:
           - laravel: 12.*
             testbench: ^10.0
 
-    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
+    name: P${{ matrix.php }} - L${{ matrix.laravel }} - DB ${{ matrix.db }} - ${{ matrix.dependency-version }}
 
     services:
       mysql:
@@ -57,10 +58,18 @@ jobs:
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
           composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
 
-      - name: Execute tests
+      - name: Execute tests (MySQL)
         run: vendor/bin/phpunit
+        if: ${{ matrix.db == 'mysql' }}
         env:
           DB_DATABASE: protone_media_db_test
           DB_USERNAME: protone_media_db_test
           DB_PASSWORD: secret
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
+
+      - name: Execute tests (SQLite)
+        run: vendor/bin/phpunit
+        if: ${{ matrix.db == 'sqlite' }}
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"

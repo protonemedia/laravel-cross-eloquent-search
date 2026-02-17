@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
+use Illuminate\Database\SQLiteConnection;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -509,15 +510,21 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
+        $lengthFunctionName = $this->usesSQLiteConnection() ? 'LENGTH' : 'CHAR_LENGTH';
+
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $lengthFunctionName) {
             $connection = $modelToSearchThrough->getModel()->getConnection();
             $prefix = $connection->getTablePrefix();
             $field = (new MySqlGrammar($connection))->wrap($prefix . $field);
 
-            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+            return $this->termsWithoutWildcards->map(function ($term) use ($field, $lengthFunctionName) {
                 return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
-                    'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
+                    'expression' => sprintf(
+                        'COALESCE(%1$s(LOWER(%2$s)) - %1$s(REPLACE(LOWER(%2$s), ?, ?)), 0)',
+                        $lengthFunctionName,
+                        $field
+                    ),
+                    'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
         });
@@ -576,7 +583,7 @@ class Searcher
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
 
-        return "COALESCE({$modelOrderKeys})";
+        return "COALESCE({$modelOrderKeys}, NULL)";
     }
 
     /**
@@ -589,7 +596,7 @@ class Searcher
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
 
-        return "COALESCE({$modelOrderKeys})";
+        return "COALESCE({$modelOrderKeys}, NULL)";
     }
 
     /**
@@ -777,5 +784,15 @@ class Searcher
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
+    }
+
+    /**
+     * Returns true if the current connection driver is SQLite, otherwise false.
+     *
+     * @return bool
+     */
+    private function usesSQLiteConnection(): bool
+    {
+        return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof SQLiteConnection;
     }
 }

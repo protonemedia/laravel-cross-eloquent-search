@@ -16,8 +16,8 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 ## Requirements
 
 * PHP 8.2 or higher
-* MySQL 8.0+
-* Laravel 10.0+
+* MySQL 8.0+ or SQLite
+* Laravel 11.0+
 
 ## Features
 
