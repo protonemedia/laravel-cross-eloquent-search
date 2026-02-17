@@ -9,6 +9,10 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Pagination\Paginator;
+use ProtoneMedia\LaravelCrossEloquentSearch\Contracts\DatabaseDialect;
+use ProtoneMedia\LaravelCrossEloquentSearch\Dialects\MySQLDialect;
+use ProtoneMedia\LaravelCrossEloquentSearch\Dialects\PostgreSQLDialect;
+use ProtoneMedia\LaravelCrossEloquentSearch\Dialects\SQLiteDialect;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -107,11 +111,17 @@ class Searcher
     protected ?string $includeModelTypeWithKey = null;
 
     /**
+     * Database dialect for handling database-specific operations.
+     */
+    protected DatabaseDialect $dialect;
+
+    /**
      * Initialises the instanace with a fresh Collection and default sort.
      */
     public function __construct()
     {
         $this->modelsToSearchThrough = new Collection;
+        $this->dialect = $this->obtainDialect();
 
         $this->orderByAsc();
     }
@@ -159,6 +169,10 @@ class Searcher
      */
     public function orderByModel($modelClasses): self
     {
+        if (!$this->dialect->supportsOrderByModel()) {
+            throw new UnsupportedOperationException('Order by model is not supported on ' . $this->dialect->getName());
+        }
+
         $this->orderByModel = Arr::wrap($modelClasses);
 
         return $this;
@@ -223,6 +237,10 @@ class Searcher
 
     public function addFullText($query, $columns = null, array $options = [], string $orderByColumn = null): self
     {
+        if (!$this->dialect->supportsFullTextSearch()) {
+            throw new UnsupportedOperationException('Full-text search is not supported on ' . $this->dialect->getName());
+        }
+
         $builder = is_string($query) ? $query::query() : $query;
 
         $modelToSearchThrough = new ModelToSearchThrough(
@@ -315,7 +333,7 @@ class Searcher
     {
         $this->soundsLike = $state;
 
-        $this->whereOperator = $state ? 'sounds like' : 'like';
+        $state ? $this->dialect->useSoundsLike() : $this->dialect->avoidSoundsLike();
 
         return $this;
     }
@@ -483,13 +501,7 @@ class Searcher
      */
     private function addWhereTermsToQuery(Builder $query, $column)
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar($query->getConnection()))->wrap($column) : $column;
-
-        $this->terms->each(function ($term) use ($query, $column) {
-            $this->ignoreCase
-                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
-                : $query->orWhere($column, $this->whereOperator, $term);
-        });
+        $this->dialect->addWhereTermsToQuery($query, $column);
     }
 
     /**
@@ -515,8 +527,9 @@ class Searcher
             $field = (new MySqlGrammar($connection))->wrap($prefix . $field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+                $charLengthFunction = $this->dialect->getCharLengthFunction();
                 return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
+                    'expression' => "COALESCE({$charLengthFunction}(LOWER({$field})) - {$charLengthFunction}(REPLACE(LOWER({$field}), ?, ?)), 0)",
                     'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
@@ -574,9 +587,9 @@ class Searcher
      */
     protected function makeOrderBy(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order');
 
-        return "COALESCE({$modelOrderKeys})";
+        return $this->dialect->makeCoalesce($modelOrderKeys);
     }
 
     /**
@@ -587,9 +600,9 @@ class Searcher
      */
     protected function makeOrderByModel(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order');
 
-        return "COALESCE({$modelOrderKeys})";
+        return $this->dialect->makeCoalesce($modelOrderKeys);
     }
 
     /**
@@ -777,5 +790,34 @@ class Searcher
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
+    }
+
+    /**
+     * Get the search terms collection for the dialect.
+     */
+    public function getSearchTerms(): Collection
+    {
+        return Collection::wrap($this->parseTerm ? $this->parseSearchTerm($this->terms) : $this->terms);
+    }
+
+    /**
+     * Check if case insensitive search is enabled.
+     */
+    public function isCaseInsensitive(): bool
+    {
+        return $this->ignoreCase;
+    }
+
+    /**
+     * Obtain the appropriate database dialect based on the connection driver.
+     */
+    private function obtainDialect(): DatabaseDialect
+    {
+        return match (DB::connection()->getDriverName()) {
+            'mysql' => new MySQLDialect($this),
+            'pgsql' => new PostgreSQLDialect($this),
+            'sqlite' => new SQLiteDialect($this),
+            default => throw new \InvalidArgumentException('Unsupported database driver: ' . DB::connection()->getDriverName()),
+        };
     }
 }

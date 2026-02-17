@@ -223,6 +223,10 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_use_the_sounds_like_operator()
     {
+        if (!$this->supportsSoundsLike()) {
+            $this->markTestSkipped('Sounds like search is not supported on ' . config('database.default'));
+        }
+
         Video::create(['title' => 'laravel']);
 
         $this->assertCount(0, Search::add(Video::class, 'title')->search('larafel'));
@@ -396,6 +400,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_sort_by_model_order()
     {
+        if (!$this->supportsOrderByModel()) {
+            $this->markTestSkipped('Order by model is not supported on ' . config('database.default'));
+        }
         $post    = Post::create(['title' => 'foo']);
         $comment = $post->comments()->create(['body' => 'foo']);
         $video   = Video::create(['title' => 'foo']);
@@ -442,6 +449,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_respects_the_regular_order_when_ordering_by_model_type()
     {
+        if (!$this->supportsOrderByModel()) {
+            $this->markTestSkipped('Order by model is not supported on ' . config('database.default'));
+        }
         $postA  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(4)]);
         $postB  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
@@ -462,6 +472,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_respects_the_relevance_order_when_ordering_by_model_type()
     {
+        if (!$this->supportsOrderByModel()) {
+            $this->markTestSkipped('Order by model is not supported on ' . config('database.default'));
+        }
         $videoA = Video::create(['title' => 'Apple introduces', 'subtitle' => 'iPhone 13 and iPhone 13 mini']);
         $videoB = Video::create(['title' => 'Apple unveils', 'subtitle' => 'new iPad mini with breakthrough performance in stunning new design']);
 
@@ -620,6 +633,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search()
     {
+        if (!$this->supportsFullTextSearch()) {
+            $this->markTestSkipped('Full-text search is not supported on ' . config('database.default'));
+        }
         $postA = Post::create(['title' => 'Laravel Framework']);
         $postB = Post::create(['title' => 'Tailwind Framework']);
 
@@ -647,6 +663,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search_on_relations()
     {
+        if (!$this->supportsFullTextSearch()) {
+            $this->markTestSkipped('Full-text search is not supported on ' . config('database.default'));
+        }
         $videoA = Video::create(['title' => 'Page A']);
         $videoB = Video::create(['title' => 'Page B']);
         $videoC = Video::create(['title' => 'Page C']);

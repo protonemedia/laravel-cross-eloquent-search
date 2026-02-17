@@ -16,8 +16,21 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 ## Requirements
 
 * PHP 8.2 or higher
-* MySQL 8.0+
-* Laravel 10.0+
+* MySQL 8.0+, PostgreSQL 12+, or SQLite 3.8+
+* Laravel 11.0+
+
+### Database Support Matrix
+
+| Feature                | MySQL 8.0+ | PostgreSQL 12+ | SQLite 3.8+ |
+|------------------------|-------------|----------------|-------------|
+| Multi-model search     | ✔           | ✔              | ✔           |
+| Multi-model pagination | ✔           | ✔              | ✔           |
+| Search in JSON fields  | ✔           | ✔              | ✔           |
+| Sounds like search     | ✔           | ✔ (with pg_trgm)| ❌          |
+| Full-text search       | ✔           | ❌             | ❌          |
+| Order by model         | ✔           | ❌             | ❌          |
+
+**Note for PostgreSQL**: To use the `soundsLike()` method, you need to enable the [pg_trgm extension](https://www.postgresql.org/docs/current/pgtrgm.html) by running `CREATE EXTENSION pg_trgm;` on your database.
 
 ## Features
 
