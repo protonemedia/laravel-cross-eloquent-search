@@ -102,6 +102,20 @@ class Searcher
     protected $page;
 
     /**
+     * The maximum number of results to return.
+     *
+     * @var int|null
+     */
+    protected ?int $limit = null;
+
+    /**
+     * The number of results to skip.
+     *
+     * @var int|null
+     */
+    protected ?int $offset = null;
+
+    /**
      * Include the model type in the search results.
      */
     protected ?string $includeModelTypeWithKey = null;
@@ -351,6 +365,32 @@ class Searcher
         $this->paginate($perPage, $pageName, $page);
 
         $this->simplePaginate = true;
+
+        return $this;
+    }
+
+    /**
+     * Set the maximum number of results to return.
+     *
+     * @param int $limit
+     * @return self
+     */
+    public function limit(int $limit): self
+    {
+        $this->limit = $limit;
+
+        return $this;
+    }
+
+    /**
+     * Set the number of results to skip.
+     *
+     * @param int $offset
+     * @return self
+     */
+    public function offset(int $offset): self
+    {
+        $this->offset = $offset;
 
         return $this;
     }
@@ -668,9 +708,19 @@ class Searcher
         $paginateMethod = $this->simplePaginate ? 'simplePaginate' : 'paginate';
 
         // get all results or limit the results by pagination
-        return $this->pageName
-            ? $query->{$paginateMethod}($this->perPage, ['*'], $this->pageName, $this->page)
-            : $query->get();
+        if ($this->pageName) {
+            return $query->{$paginateMethod}($this->perPage, ['*'], $this->pageName, $this->page);
+        }
+
+        if ($this->limit !== null) {
+            $query->limit($this->limit);
+        }
+
+        if ($this->offset !== null) {
+            $query->offset($this->offset);
+        }
+
+        return $query->get();
 
         // the collection will be something like:
         //

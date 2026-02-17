@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher addMany($queries)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher paginate($perPage = 15, $pageName = 'page', $page = null)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher simplePaginate($perPage = 15, $pageName = 'page', $page = null)
+ * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher limit(int $limit)
+ * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher offset(int $offset)
  * @method static \Illuminate\Support\Collection parseTerms(string $terms, callable $callback = null)
  * @method static \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator get(string $terms = null)
  *

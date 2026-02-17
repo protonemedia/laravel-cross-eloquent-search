@@ -310,6 +310,43 @@ class SearchTest extends TestCase
     }
 
     /** @test */
+    public function it_can_limit_the_results()
+    {
+        Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+        Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        Video::create(['title' => 'foo', 'published_at' => now()]);
+        Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $results = Search::add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc()
+            ->limit(2)
+            ->search('foo');
+
+        $this->assertCount(2, $results);
+    }
+
+    /** @test */
+    public function it_can_offset_the_results()
+    {
+        $postA  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+        $postB  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
+        $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $results = Search::add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc()
+            ->limit(2)
+            ->offset(2)
+            ->search('foo');
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results->first()->is($postA));
+        $this->assertTrue($results->last()->is($videoA));
+    }
+
+    /** @test */
     public function it_can_eager_load_relations()
     {
         $postA = Post::create(['title' => 'foo']);
