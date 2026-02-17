@@ -515,7 +515,7 @@ class Searcher
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $lengthFunctionName) {
             $connection = $modelToSearchThrough->getModel()->getConnection();
             $prefix = $connection->getTablePrefix();
-            $field = (new MySqlGrammar($connection))->wrap($prefix . $field);
+            $field = $connection->getQueryGrammar()->wrap($prefix . $field);
 
             return $this->termsWithoutWildcards->map(function ($term) use ($field, $lengthFunctionName) {
                 return [
@@ -583,7 +583,35 @@ class Searcher
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
 
+        // SQLite has stricter column resolution in UNION queries,
+        // so we use a different approach that's more compatible
+        if ($this->isSQLiteConnection()) {
+            return $this->makeSQLiteOrderBy($modelOrderKeys);
+        }
+
         return "COALESCE({$modelOrderKeys}, NULL)";
+    }
+
+    /**
+     * Creates an SQLite-compatible ORDER BY expression using COALESCE.
+     * This should work in a subquery context.
+     *
+     * @param string $modelOrderKeys
+     * @return string
+     */
+    protected function makeSQLiteOrderBy(string $modelOrderKeys): string
+    {
+        return "COALESCE({$modelOrderKeys}, NULL)";
+    }
+
+    /**
+     * Check if the current connection is SQLite.
+     *
+     * @return bool
+     */
+    protected function isSQLiteConnection(): bool
+    {
+        return $this->usesSQLiteConnection();
     }
 
     /**
@@ -595,6 +623,12 @@ class Searcher
     protected function makeOrderByModel(): string
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
+
+        // SQLite has stricter column resolution in UNION queries,
+        // so we use a different approach that's more compatible
+        if ($this->isSQLiteConnection()) {
+            return $this->makeSQLiteOrderBy($modelOrderKeys);
+        }
 
         return "COALESCE({$modelOrderKeys}, NULL)";
     }
@@ -644,6 +678,11 @@ class Searcher
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
+        // For SQLite, we need to wrap the UNION query in a subquery to apply ORDER BY
+        if ($this->isSQLiteConnection()) {
+            return $this->applySQLiteOrdering($firstQuery);
+        }
+
         if ($this->orderByModel) {
             $firstQuery->orderBy(
                 DB::raw($this->makeOrderByModel()),
@@ -657,6 +696,35 @@ class Searcher
 
         // sort by the given columns and direction
         return $firstQuery->orderBy(
+            DB::raw($this->makeOrderBy()),
+            $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+        );
+    }
+
+    /**
+     * Apply SQLite-specific ordering by wrapping the query in a subquery.
+     *
+     * @param QueryBuilder $unionQuery
+     * @return QueryBuilder
+     */
+    protected function applySQLiteOrdering(QueryBuilder $unionQuery): QueryBuilder
+    {
+        // Create a new query that selects from the UNION as a subquery
+        $subQuery = DB::query()->fromSub($unionQuery, 'union_results');
+
+        if ($this->orderByModel) {
+            $subQuery->orderBy(
+                DB::raw($this->makeOrderByModel()),
+                $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+            );
+        }
+
+        if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
+            return $subQuery->orderBy('terms_count', 'desc');
+        }
+
+        // sort by the given columns and direction
+        return $subQuery->orderBy(
             DB::raw($this->makeOrderBy()),
             $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
         );

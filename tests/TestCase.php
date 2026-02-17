@@ -28,29 +28,61 @@ class TestCase extends OrchestraTestCase
 
     protected function initDatabase($prefix = '')
     {
-        DB::purge('mysql');
+        $connection = env('DB_CONNECTION', 'mysql');
+        
+        DB::purge($connection);
 
-        $this->app['config']->set('database.connections.mysql', [
-            'driver'         => 'mysql',
-            'url'            => env('DATABASE_URL'),
-            'host'           => env('DB_HOST', '127.0.0.1'),
-            'port'           => env('DB_PORT', '3306'),
-            'database'       => env('DB_DATABASE', 'search_test'),
-            'username'       => env('DB_USERNAME', 'homestead'),
-            'password'       => env('DB_PASSWORD', 'secret'),
-            'unix_socket'    => env('DB_SOCKET', ''),
-            'charset'        => 'utf8mb4',
-            'collation'      => 'utf8mb4_unicode_ci',
-            'prefix'         => $prefix,
-            'prefix_indexes' => true,
-            'strict'         => true,
-            'engine'         => null,
-            'options'        => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
-        ]);
+        // Configure the appropriate database connection
+        switch ($connection) {
+            case 'sqlite':
+                $this->app['config']->set('database.connections.sqlite', [
+                    'driver'   => 'sqlite',
+                    'database' => env('DB_DATABASE', ':memory:'),
+                    'prefix'   => $prefix,
+                ]);
+                break;
 
-        DB::setDefaultConnection('mysql');
+            case 'pgsql':
+                $this->app['config']->set('database.connections.pgsql', [
+                    'driver'         => 'pgsql',
+                    'host'           => env('DB_HOST', '127.0.0.1'),
+                    'port'           => env('DB_PORT', '5432'),
+                    'database'       => env('DB_DATABASE', 'search_test'),
+                    'username'       => env('DB_USERNAME', 'homestead'),
+                    'password'       => env('DB_PASSWORD', 'secret'),
+                    'charset'        => 'utf8',
+                    'prefix'         => $prefix,
+                    'prefix_indexes' => true,
+                    'schema'         => 'public',
+                    'sslmode'        => 'prefer',
+                ]);
+                break;
+
+            case 'mysql':
+            default:
+                $this->app['config']->set('database.connections.mysql', [
+                    'driver'         => 'mysql',
+                    'url'            => env('DATABASE_URL'),
+                    'host'           => env('DB_HOST', '127.0.0.1'),
+                    'port'           => env('DB_PORT', '3306'),
+                    'database'       => env('DB_DATABASE', 'search_test'),
+                    'username'       => env('DB_USERNAME', 'homestead'),
+                    'password'       => env('DB_PASSWORD', 'secret'),
+                    'unix_socket'    => env('DB_SOCKET', ''),
+                    'charset'        => 'utf8mb4',
+                    'collation'      => 'utf8mb4_unicode_ci',
+                    'prefix'         => $prefix,
+                    'prefix_indexes' => true,
+                    'strict'         => true,
+                    'engine'         => null,
+                    'options'        => extension_loaded('pdo_mysql') ? array_filter([
+                        PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                    ]) : [],
+                ]);
+                break;
+        }
+
+        DB::setDefaultConnection($connection);
 
         $this->artisan('migrate:fresh');
 

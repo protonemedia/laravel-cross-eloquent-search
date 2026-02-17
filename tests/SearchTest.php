@@ -128,6 +128,11 @@ class SearchTest extends TestCase
     /** @test */
     public function it_has_an_option_to_ignore_the_case()
     {
+        // Skip JSON column tests on SQLite due to different JSON function support
+        if (config('database.default') === 'sqlite') {
+            $this->markTestSkipped('JSON column operations not supported on SQLite.');
+        }
+
         Post::create(['title' => 'foo']);
         Post::create(['title' => 'bar bar']);
 
@@ -223,6 +228,11 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_use_the_sounds_like_operator()
     {
+        // Skip SOUNDS LIKE test on SQLite - operator not supported
+        if (config('database.default') === 'sqlite') {
+            $this->markTestSkipped('SOUNDS LIKE operator not supported on SQLite.');
+        }
+
         Video::create(['title' => 'laravel']);
 
         $this->assertCount(0, Search::add(Video::class, 'title')->search('larafel'));
@@ -620,6 +630,11 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search()
     {
+        // Skip fulltext search tests on SQLite - feature not supported
+        if (config('database.default') === 'sqlite') {
+            $this->markTestSkipped('Fulltext search not supported on SQLite.');
+        }
+
         $postA = Post::create(['title' => 'Laravel Framework']);
         $postB = Post::create(['title' => 'Tailwind Framework']);
 
@@ -647,6 +662,11 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search_on_relations()
     {
+        // Skip fulltext search tests on SQLite - feature not supported
+        if (config('database.default') === 'sqlite') {
+            $this->markTestSkipped('Fulltext search not supported on SQLite.');
+        }
+
         $videoA = Video::create(['title' => 'Page A']);
         $videoB = Video::create(['title' => 'Page B']);
         $videoC = Video::create(['title' => 'Page C']);
