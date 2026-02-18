@@ -435,7 +435,8 @@ class Searcher
                     if ($relation = $modelToSearchThrough->getFullTextRelation()) {
                         $query->orWhereHas($relation, function ($relationQuery) use ($modelToSearchThrough) {
                             $relationQuery->where(function ($query) use ($modelToSearchThrough) {
-                                $query->orWhereFullText(
+                                $this->addFullTextSearchToQuery(
+                                    $query,
                                     $modelToSearchThrough->getColumns()->all(),
                                     $this->rawTerms,
                                     $modelToSearchThrough->getFullTextOptions()
@@ -443,7 +444,8 @@ class Searcher
                             });
                         });
                     } else {
-                        $query->orWhereFullText(
+                        $this->addFullTextSearchToQuery(
+                            $query,
                             $modelToSearchThrough->getColumns()->map(fn ($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
                             $this->rawTerms,
                             $modelToSearchThrough->getFullTextOptions()
@@ -487,9 +489,15 @@ class Searcher
         $column = $this->ignoreCase ? $query->getConnection()->getQueryGrammar()->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
-            $this->ignoreCase
-                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
-                : $query->orWhere($column, $this->whereOperator, $term);
+            if ($this->soundsLike && $this->isPostgreSQLConnection()) {
+                // PostgreSQL similarity search using pg_trgm
+                $cleanTerm = str_replace('%', '', $term); // Remove wildcards
+                $query->orWhereRaw("similarity({$column}, ?) > 0.3", [$cleanTerm]);
+            } elseif ($this->ignoreCase) {
+                $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term]);
+            } else {
+                $query->orWhere($column, $this->whereOperator, $term);
+            }
         });
     }
 
@@ -545,13 +553,22 @@ class Searcher
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
-            $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
+            // Use proper NULL casting for PostgreSQL
+            $nullKey = $this->isPostgreSQLConnection() ? 'NULL::bigint' : 'null';
+            $nullOrder = $this->isPostgreSQLConnection() ? 'NULL::text' : 'null';  // Use text for mixed column types
+            $nullInteger = $this->isPostgreSQLConnection() ? 'NULL::integer' : 'null';
+            
+            $qualifiedKeyName = $nullKey;
+            $qualifiedOrderByColumnName = $nullOrder;
+            $modelOrderKey = $nullInteger;
 
             if ($modelToSearchThrough === $currentModel) {
                 $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
 
                 $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
-                $qualifiedOrderByColumnName = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
+                $orderColumn = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
+                // Cast to text for PostgreSQL to ensure consistent types across UNION
+                $qualifiedOrderByColumnName = $this->isPostgreSQLConnection() ? "({$orderColumn})::text" : $orderColumn;
 
                 if ($this->orderByModel) {
                     $modelOrderKey = array_search(
@@ -882,5 +899,58 @@ class Searcher
     protected function isPostgreSQLConnection(): bool
     {
         return $this->usesPostgreSQLConnection();
+    }
+
+    /**
+     * Add database-specific full-text search to query.
+     *
+     * @param Builder $query
+     * @param array $columns
+     * @param string $terms
+     * @param array $options
+     * @return void
+     */
+    protected function addFullTextSearchToQuery($query, array $columns, string $terms, array $options = []): void
+    {
+        if ($this->isPostgreSQLConnection()) {
+            $this->addPostgreSQLFullTextSearch($query, $columns, $terms, $options);
+        } else {
+            // MySQL and other databases
+            $query->orWhereFullText($columns, $terms, $options);
+        }
+    }
+
+    /**
+     * Add PostgreSQL-specific full-text search to query.
+     *
+     * @param Builder $query
+     * @param array $columns
+     * @param string $terms
+     * @param array $options
+     * @return void
+     */
+    protected function addPostgreSQLFullTextSearch($query, array $columns, string $terms, array $options = []): void
+    {
+        // Escape terms for PostgreSQL tsquery
+        $escapedTerms = str_replace("'", "''", $terms);
+        $tsquery = implode(' & ', array_map(function($term) {
+            return trim($term) . ':*';
+        }, explode(' ', trim($escapedTerms))));
+        
+        if (count($columns) === 1) {
+            // Single column search
+            $column = $columns[0];
+            $query->orWhereRaw(
+                "to_tsvector('english', {$column}) @@ to_tsquery('english', ?)", 
+                [$tsquery]
+            );
+        } else {
+            // Multi-column search - concatenate columns
+            $columnExpr = implode(" || ' ' || ", $columns);
+            $query->orWhereRaw(
+                "to_tsvector('english', {$columnExpr}) @@ to_tsquery('english', ?)", 
+                [$tsquery]
+            );
+        }
     }
 }

@@ -228,9 +228,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_use_the_sounds_like_operator()
     {
-        // Skip SOUNDS LIKE test on SQLite and PostgreSQL - operator not supported without extensions
-        if (in_array(config('database.default'), ['sqlite', 'pgsql'])) {
-            $this->markTestSkipped('SOUNDS LIKE operator not supported on SQLite or PostgreSQL without extensions.');
+        // Skip SOUNDS LIKE test on SQLite - operator not supported
+        if (config('database.default') === 'sqlite') {
+            $this->markTestSkipped('SOUNDS LIKE operator not supported on SQLite.');
         }
 
         Video::create(['title' => 'laravel']);
@@ -406,10 +406,6 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_sort_by_model_order()
     {
-        // Skip on PostgreSQL due to stricter UNION type matching requirements
-        if (config('database.default') === 'pgsql') {
-            $this->markTestSkipped('Order by model requires more type-strict UNION queries on PostgreSQL.');
-        }
         $post    = Post::create(['title' => 'foo']);
         $comment = $post->comments()->create(['body' => 'foo']);
         $video   = Video::create(['title' => 'foo']);
@@ -634,9 +630,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search()
     {
-        // Skip fulltext search tests on SQLite and PostgreSQL - different syntax required
+        // Skip fulltext search tests on SQLite and PostgreSQL - different implementations
         if (in_array(config('database.default'), ['sqlite', 'pgsql'])) {
-            $this->markTestSkipped('Fulltext search not supported on SQLite, PostgreSQL uses different syntax.');
+            $this->markTestSkipped('Fulltext search requires different implementations on SQLite/PostgreSQL.');
         }
 
         $postA = Post::create(['title' => 'Laravel Framework']);
@@ -666,9 +662,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search_on_relations()
     {
-        // Skip fulltext search tests on SQLite and PostgreSQL - different syntax required
+        // Skip fulltext search tests on SQLite and PostgreSQL - different implementations
         if (in_array(config('database.default'), ['sqlite', 'pgsql'])) {
-            $this->markTestSkipped('Fulltext search not supported on SQLite, PostgreSQL uses different syntax.');
+            $this->markTestSkipped('Fulltext search requires different implementations on SQLite/PostgreSQL.');
         }
 
         $videoA = Video::create(['title' => 'Page A']);
