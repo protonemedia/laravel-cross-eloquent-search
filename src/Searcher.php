@@ -9,6 +9,7 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Database\SQLiteConnection;
+use Illuminate\Database\PostgresConnection;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -583,23 +584,23 @@ class Searcher
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
 
-        // SQLite has stricter column resolution in UNION queries,
+        // SQLite and PostgreSQL have stricter column resolution in UNION queries,
         // so we use a different approach that's more compatible
-        if ($this->isSQLiteConnection()) {
-            return $this->makeSQLiteOrderBy($modelOrderKeys);
+        if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
+            return $this->makeCompatibleOrderBy($modelOrderKeys);
         }
 
         return "COALESCE({$modelOrderKeys}, NULL)";
     }
 
     /**
-     * Creates an SQLite-compatible ORDER BY expression using COALESCE.
-     * This should work in a subquery context.
+     * Creates a database-compatible ORDER BY expression using COALESCE.
+     * This works for SQLite and PostgreSQL in subquery contexts.
      *
      * @param string $modelOrderKeys
      * @return string
      */
-    protected function makeSQLiteOrderBy(string $modelOrderKeys): string
+    protected function makeCompatibleOrderBy(string $modelOrderKeys): string
     {
         return "COALESCE({$modelOrderKeys}, NULL)";
     }
@@ -624,10 +625,10 @@ class Searcher
     {
         $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
 
-        // SQLite has stricter column resolution in UNION queries,
+        // SQLite and PostgreSQL have stricter column resolution in UNION queries,
         // so we use a different approach that's more compatible
-        if ($this->isSQLiteConnection()) {
-            return $this->makeSQLiteOrderBy($modelOrderKeys);
+        if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
+            return $this->makeCompatibleOrderBy($modelOrderKeys);
         }
 
         return "COALESCE({$modelOrderKeys}, NULL)";
@@ -678,9 +679,9 @@ class Searcher
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
-        // For SQLite, we need to wrap the UNION query in a subquery to apply ORDER BY
-        if ($this->isSQLiteConnection()) {
-            return $this->applySQLiteOrdering($firstQuery);
+        // For SQLite and PostgreSQL, we need to wrap the UNION query in a subquery to apply ORDER BY
+        if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
+            return $this->applyCompatibleOrdering($firstQuery);
         }
 
         if ($this->orderByModel) {
@@ -707,7 +708,7 @@ class Searcher
      * @param QueryBuilder $unionQuery
      * @return QueryBuilder
      */
-    protected function applySQLiteOrdering(QueryBuilder $unionQuery): QueryBuilder
+    protected function applyCompatibleOrdering(QueryBuilder $unionQuery): QueryBuilder
     {
         // Create a new query that selects from the UNION as a subquery
         $subQuery = DB::query()->fromSub($unionQuery, 'union_results');
@@ -862,5 +863,25 @@ class Searcher
     private function usesSQLiteConnection(): bool
     {
         return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof SQLiteConnection;
+    }
+
+    /**
+     * Returns true if the current connection driver is PostgreSQL, otherwise false.
+     *
+     * @return bool
+     */
+    private function usesPostgreSQLConnection(): bool
+    {
+        return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof PostgresConnection;
+    }
+
+    /**
+     * Check if the current connection is PostgreSQL.
+     *
+     * @return bool
+     */
+    protected function isPostgreSQLConnection(): bool
+    {
+        return $this->usesPostgreSQLConnection();
     }
 }

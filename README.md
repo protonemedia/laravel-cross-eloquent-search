@@ -16,7 +16,7 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 ## Requirements
 
 * PHP 8.2 or higher
-* MySQL 8.0+ or SQLite
+* MySQL 8.0+, PostgreSQL 12+, or SQLite 3.8+
 * Laravel 11.0+
 
 ## Features
@@ -31,6 +31,19 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
 * In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
 * Zero third-party dependencies
+
+## Database Support
+
+| Feature | MySQL 8.0+ | PostgreSQL 12+ | SQLite 3.8+ |
+|---------|-------------|-----------------|-------------|
+| Basic search | ✅ | ✅ | ✅ |
+| Multi-model pagination | ✅ | ✅ | ✅ |
+| Nested relationship search | ✅ | ✅ | ✅ |
+| Sounds like search | ✅ | ❌ | ❌ |
+| Full-text search | ✅ | ❌ | ❌ |
+| Order by model | ✅ | ✅ | ✅ |
+
+**Note:** PostgreSQL and SQLite use different full-text search implementations than MySQL. Sounds like functionality requires the `pg_trgm` extension on PostgreSQL.
 
 ### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 

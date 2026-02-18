@@ -228,9 +228,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_use_the_sounds_like_operator()
     {
-        // Skip SOUNDS LIKE test on SQLite - operator not supported
-        if (config('database.default') === 'sqlite') {
-            $this->markTestSkipped('SOUNDS LIKE operator not supported on SQLite.');
+        // Skip SOUNDS LIKE test on SQLite and PostgreSQL - operator not supported without extensions
+        if (in_array(config('database.default'), ['sqlite', 'pgsql'])) {
+            $this->markTestSkipped('SOUNDS LIKE operator not supported on SQLite or PostgreSQL without extensions.');
         }
 
         Video::create(['title' => 'laravel']);
@@ -630,9 +630,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search()
     {
-        // Skip fulltext search tests on SQLite - feature not supported
-        if (config('database.default') === 'sqlite') {
-            $this->markTestSkipped('Fulltext search not supported on SQLite.');
+        // Skip fulltext search tests on SQLite and PostgreSQL - different syntax required
+        if (in_array(config('database.default'), ['sqlite', 'pgsql'])) {
+            $this->markTestSkipped('Fulltext search not supported on SQLite, PostgreSQL uses different syntax.');
         }
 
         $postA = Post::create(['title' => 'Laravel Framework']);
@@ -662,9 +662,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_supports_full_text_search_on_relations()
     {
-        // Skip fulltext search tests on SQLite - feature not supported
-        if (config('database.default') === 'sqlite') {
-            $this->markTestSkipped('Fulltext search not supported on SQLite.');
+        // Skip fulltext search tests on SQLite and PostgreSQL - different syntax required
+        if (in_array(config('database.default'), ['sqlite', 'pgsql'])) {
+            $this->markTestSkipped('Fulltext search not supported on SQLite, PostgreSQL uses different syntax.');
         }
 
         $videoA = Video::create(['title' => 'Page A']);
