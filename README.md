@@ -39,11 +39,11 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 | Basic search | ✅ | ✅ | ✅ |
 | Multi-model pagination | ✅ | ✅ | ✅ |
 | Nested relationship search | ✅ | ✅ | ✅ |
-| Sounds like search | ✅ | ❌ | ❌ |
-| Full-text search | ✅ | ❌ | ❌ |
+| Sounds like search | ✅ | ✅ (pg_trgm) | ❌ |
+| Full-text search | ✅ | ⏳ | ❌ |
 | Order by model | ✅ | ✅ | ✅ |
 
-**Note:** PostgreSQL and SQLite use different full-text search implementations than MySQL. Sounds like functionality requires the `pg_trgm` extension on PostgreSQL.
+**Note:** PostgreSQL sounds like search uses the `pg_trgm` extension with similarity matching. Full-text search implementations vary between databases - PostgreSQL and SQLite require different approaches than MySQL's native FULLTEXT indexes.
 
 ### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 
