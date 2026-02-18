@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Database\SQLiteConnection;
 use Illuminate\Database\PostgresConnection;
 use Illuminate\Pagination\Paginator;
@@ -485,7 +484,7 @@ class Searcher
      */
     private function addWhereTermsToQuery(Builder $query, $column)
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar($query->getConnection()))->wrap($column) : $column;
+        $column = $this->ignoreCase ? $query->getConnection()->getQueryGrammar()->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
             $this->ignoreCase
