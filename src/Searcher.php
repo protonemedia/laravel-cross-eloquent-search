@@ -493,6 +493,10 @@ class Searcher
                 // PostgreSQL similarity search using pg_trgm
                 $cleanTerm = str_replace('%', '', $term); // Remove wildcards
                 $query->orWhereRaw("similarity({$column}, ?) > 0.3", [$cleanTerm]);
+            } elseif ($this->soundsLike && $this->isSQLiteConnection()) {
+                // SQLite similarity search using basic phonetic patterns
+                $cleanTerm = str_replace('%', '', $term); // Remove wildcards
+                $this->addSQLiteSoundsLikeToQuery($query, $column, $cleanTerm);
             } elseif ($this->ignoreCase) {
                 $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term]);
             } else {
@@ -914,10 +918,97 @@ class Searcher
     {
         if ($this->isPostgreSQLConnection()) {
             $this->addPostgreSQLFullTextSearch($query, $columns, $terms, $options);
+        } elseif ($this->isSQLiteConnection()) {
+            $this->addSQLiteFullTextSearch($query, $columns, $terms, $options);
         } else {
             // MySQL and other databases
             $query->orWhereFullText($columns, $terms, $options);
         }
+    }
+
+    /**
+     * Add SQLite SOUNDS LIKE functionality using phonetic similarity patterns.
+     *
+     * @param Builder $query
+     * @param string $column
+     * @param string $term
+     * @return void
+     */
+    protected function addSQLiteSoundsLikeToQuery($query, string $column, string $term): void
+    {
+        $term = strtolower($term);
+        
+        // Generate phonetic variations for similarity matching
+        $patterns = [
+            $term,                                              // exact match
+            str_replace(['ph', 'f'], ['f', 'ph'], $term),      // ph/f swapping
+            str_replace(['c', 'k'], ['k', 'c'], $term),        // c/k swapping  
+            str_replace(['s', 'z'], ['z', 's'], $term),        // s/z swapping
+            '%' . substr($term, 0, min(3, strlen($term))) . '%', // starts with first 3 chars
+            '%' . substr($term, -2) . '%',                      // ends with last 2 chars
+        ];
+        
+        // Remove duplicates and empty patterns
+        $patterns = array_unique(array_filter($patterns));
+        
+        $query->orWhere(function($subQuery) use ($column, $patterns) {
+            foreach ($patterns as $pattern) {
+                $subQuery->orWhereRaw("LOWER({$column}) LIKE ?", [$pattern]);
+            }
+        });
+    }
+
+    /**
+     * Add SQLite full-text search simulation using LIKE patterns and boolean operators.
+     *
+     * @param Builder $query
+     * @param array $columns  
+     * @param string $terms
+     * @param array $options
+     * @return void
+     */
+    protected function addSQLiteFullTextSearch($query, array $columns, string $terms, array $options = []): void
+    {
+        // Parse boolean operators from search terms
+        $positiveTerms = [];
+        $negativeTerms = [];
+        
+        foreach (explode(' ', trim($terms)) as $term) {
+            $term = trim($term);
+            if (empty($term)) continue;
+            
+            if (str_starts_with($term, '-')) {
+                // Negative term: -css
+                $negativeTerms[] = ltrim($term, '-');
+            } elseif (str_starts_with($term, '+')) {
+                // Positive term (explicit): +framework
+                $positiveTerms[] = ltrim($term, '+');
+            } else {
+                // Regular term: framework
+                $positiveTerms[] = $term;
+            }
+        }
+        
+        $query->orWhere(function($subQuery) use ($columns, $positiveTerms, $negativeTerms) {
+            // Must match ALL positive terms (AND logic)
+            if (!empty($positiveTerms)) {
+                foreach ($positiveTerms as $term) {
+                    $subQuery->where(function($termQuery) use ($columns, $term) {
+                        // Each positive term must be found in at least one column (OR logic)
+                        foreach ($columns as $column) {
+                            $termQuery->orWhere($column, 'like', "%{$term}%");
+                        }
+                    });
+                }
+            }
+            
+            // Must NOT match any negative terms (NOT logic)
+            foreach ($negativeTerms as $term) {
+                foreach ($columns as $column) {
+                    $subQuery->where($column, 'not like', "%{$term}%");
+                }
+            }
+        });
     }
 
     /**
@@ -931,11 +1022,28 @@ class Searcher
      */
     protected function addPostgreSQLFullTextSearch($query, array $columns, string $terms, array $options = []): void
     {
-        // Escape terms for PostgreSQL tsquery
+        // Convert MySQL boolean mode to PostgreSQL tsquery syntax
         $escapedTerms = str_replace("'", "''", $terms);
-        $tsquery = implode(' & ', array_map(function($term) {
-            return trim($term) . ':*';
-        }, explode(' ', trim($escapedTerms))));
+        
+        // Parse boolean operators: convert -term to !term (NOT), handle +term (AND), regular terms
+        $tsqueryParts = [];
+        foreach (explode(' ', trim($escapedTerms)) as $term) {
+            $term = trim($term);
+            if (empty($term)) continue;
+            
+            if (str_starts_with($term, '-')) {
+                // Negative term: -css becomes !css:*
+                $tsqueryParts[] = '!' . ltrim($term, '-') . ':*';
+            } elseif (str_starts_with($term, '+')) {
+                // Positive term (explicit): +framework becomes framework:*
+                $tsqueryParts[] = ltrim($term, '+') . ':*';
+            } else {
+                // Regular term: framework becomes framework:*
+                $tsqueryParts[] = $term . ':*';
+            }
+        }
+        
+        $tsquery = implode(' & ', $tsqueryParts);
         
         if (count($columns) === 1) {
             // Single column search
