@@ -189,13 +189,33 @@ class ModelToSearchThrough
             return $this->orderByColumn;
         }
 
-        $table = $this->getModel()->getTable();
-
-        if ($this->getModel()->getConnection()->getSchemaBuilder()->hasColumn($table, $this->orderByColumn)) {
-            return $this->qualifyColumn($this->orderByColumn);
+        if ($this->hasSelectedAlias($this->orderByColumn)) {
+            return $this->orderByColumn;
         }
 
-        return $this->orderByColumn;
+        return $this->qualifyColumn($this->orderByColumn);
+    }
+
+    /**
+     * Determine whether the builder selects the given alias.
+     */
+    private function hasSelectedAlias(string $alias): bool
+    {
+        $columns = $this->builder->getQuery()->columns;
+
+        if (! is_array($columns)) {
+            return false;
+        }
+
+        return Collection::make($columns)->contains(function ($column) use ($alias) {
+            if ($column === $alias) {
+                return true;
+            }
+
+            $column = trim((string) $column);
+
+            return (bool) preg_match('/\bas\s+[`"\[]?'.preg_quote($alias, '/').'[`"\]]?\s*$/i', $column);
+        });
     }
 
     /**
