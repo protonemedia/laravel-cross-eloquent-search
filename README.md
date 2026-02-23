@@ -93,6 +93,17 @@ Search::new()
     ->search('howto');
 ```
 
+In addition, you can use the `tap` method to tap into the searcher instance:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->tap(function ($searcher) {
+        Log::info('Search configuration', ['models' => $searcher->getModelsToSearchThrough()]);
+    })
+    ->search('laravel');
+```
+
 ### Wildcards
 
 By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to begin with as well, you can call the `beginWithWildcard` method. This will result in `%apple%` and `%ios%`.
@@ -115,6 +126,19 @@ Search::add(Post::class, 'title')
     ->endWithWildcard(false)
     ->search('os');
 ```
+
+### Exact Match
+
+If you want to perform exact matching without any wildcards, you can use the `exactMatch` method. This disables both beginning and ending wildcards and uses the exact equality operator (`=`) instead of the `LIKE` operator:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->exactMatch()
+    ->search('Laravel');
+```
+
+In this example, only records with the exact title "Laravel" will be returned, not titles containing "Laravel" as a substring.
 
 ### Multi-word search
 
@@ -413,12 +437,12 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ### Security
 
-If you discover any security-related issues, please email pascal@protone.media instead of using the issue tracker.
+If you discover any security-related issues, please email <pascal@protone.media> instead of using the issue tracker.
 
 ## Credits
 
-- [Pascal Baljet](https://github.com/protonemedia)
-- [All Contributors](../../contributors)
+* [Pascal Baljet](https://github.com/protonemedia)
+* [All Contributors](../../contributors)
 
 ## License
 
