@@ -49,7 +49,23 @@ trait HandlesPostgreSQL
      */
     protected function applyPostgresOrdering(QueryBuilder $unionQuery): QueryBuilder
     {
-        return $this->applySubqueryOrdering($unionQuery);
+        $subQuery = \Illuminate\Support\Facades\DB::query()->fromSub($unionQuery, 'union_results');
+
+        if ($this->orderByModel) {
+            $subQuery->orderBy(
+                \Illuminate\Support\Facades\DB::raw($this->makeOrderByModel()),
+                $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+            );
+        }
+
+        if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
+            return $subQuery->orderBy('terms_count', 'desc');
+        }
+
+        return $subQuery->orderBy(
+            \Illuminate\Support\Facades\DB::raw($this->makeOrderBy()),
+            $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
+        );
     }
 
     /**
@@ -90,5 +106,13 @@ trait HandlesPostgreSQL
                 [$tsquery]
             );
         }
+    }
+
+    /**
+     * PostgreSQL uses COALESCE with subquery context.
+     */
+    protected function makePostgresOrderBy(string $modelOrderKeys): string
+    {
+        return "COALESCE({$modelOrderKeys}, NULL)";
     }
 }

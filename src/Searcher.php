@@ -17,7 +17,7 @@ use Illuminate\Support\Traits\Conditionable;
 class Searcher
 {
     use Conditionable;
-    use HandlesDefaultDriver;
+    use HandlesMySQL;
     use HandlesSQLite;
     use HandlesPostgreSQL;
 
@@ -627,25 +627,11 @@ class Searcher
             ->map(fn ($key) => $grammar->wrap($key))
             ->implode(',');
 
-        // SQLite and PostgreSQL have stricter column resolution in UNION queries,
-        // so we use a different approach that's more compatible
-        if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
-            return $this->makeCompatibleOrderBy($modelOrderKeys);
-        }
-
-        return "COALESCE({$modelOrderKeys}, NULL)";
-    }
-
-    /**
-     * Creates a database-compatible ORDER BY expression using COALESCE.
-     * This works for SQLite and PostgreSQL in subquery contexts.
-     *
-     * @param string $modelOrderKeys
-     * @return string
-     */
-    protected function makeCompatibleOrderBy(string $modelOrderKeys): string
-    {
-        return "COALESCE({$modelOrderKeys}, NULL)";
+        return match (true) {
+            $this->isSQLiteConnection() => $this->makeSQLiteOrderBy($modelOrderKeys),
+            $this->isPostgreSQLConnection() => $this->makePostgresOrderBy($modelOrderKeys),
+            default => $this->makeMySQLOrderBy($modelOrderKeys),
+        };
     }
 
     /**
@@ -662,13 +648,11 @@ class Searcher
             ->map(fn ($key) => $grammar->wrap($key))
             ->implode(',');
 
-        // SQLite and PostgreSQL have stricter column resolution in UNION queries,
-        // so we use a different approach that's more compatible
-        if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
-            return $this->makeCompatibleOrderBy($modelOrderKeys);
-        }
-
-        return "COALESCE({$modelOrderKeys}, NULL)";
+        return match (true) {
+            $this->isSQLiteConnection() => $this->makeSQLiteOrderBy($modelOrderKeys),
+            $this->isPostgreSQLConnection() => $this->makePostgresOrderBy($modelOrderKeys),
+            default => $this->makeMySQLOrderBy($modelOrderKeys),
+        };
     }
 
     /**
