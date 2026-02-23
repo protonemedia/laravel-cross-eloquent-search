@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
+use Illuminate\Support\Traits\Tappable;
 
 class Searcher
 {
@@ -22,6 +23,7 @@ class Searcher
     use HandlesMySQL;
     use HandlesPostgreSQL;
     use HandlesSQLite;
+    use Tappable;
 
     /**
      * Collection of models to search through.
