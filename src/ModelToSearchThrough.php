@@ -190,31 +190,27 @@ class ModelToSearchThrough
             return $this->orderByColumn;
         }
 
-        if ($this->hasSelectedAlias($this->orderByColumn)) {
-            return $this->orderByColumn;
+        if ($expression = $this->getSelectedAliasExpression($this->orderByColumn)) {
+            return $expression;
         }
 
         return $this->qualifyColumn($this->orderByColumn);
     }
 
     /**
-     * Determine whether the builder selects the given alias.
+     * Return the SQL expression for a selected alias, without the "AS alias" part.
      */
-    private function hasSelectedAlias(string $alias): bool
+    private function getSelectedAliasExpression(string $alias): ?string
     {
         $columns = $this->builder->getQuery()->columns;
 
         if (! is_array($columns)) {
-            return false;
+            return null;
         }
 
         $grammar = $this->builder->getQuery()->grammar;
 
-        return Collection::make($columns)->contains(function ($column) use ($alias, $grammar) {
-            if (is_string($column) && $column === $alias) {
-                return true;
-            }
-
+        foreach ($columns as $column) {
             if ($column instanceof Expression) {
                 $column = method_exists($column, 'getValue')
                     ? $column->getValue($grammar)
@@ -222,13 +218,17 @@ class ModelToSearchThrough
             }
 
             if (! is_string($column)) {
-                return false;
+                continue;
             }
 
             $column = trim($column);
 
-            return (bool) preg_match('/\bas\s+[`"\[]?'.preg_quote($alias, '/').'[`"\]]?\s*$/i', $column);
-        });
+            if (preg_match('/^(.*)\bas\s+[`"\[]?'.preg_quote($alias, '/').'[`"\]]?\s*$/i', $column, $matches)) {
+                return trim($matches[1]);
+            }
+        }
+
+        return null;
     }
 
     /**
