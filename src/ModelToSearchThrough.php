@@ -138,12 +138,23 @@ class ModelToSearchThrough
      */
     public function getModelKey($suffix = 'key'): string
     {
-        // prefix with _ for SQLite support
-        return '_' . implode('_', [
+        $prefix = $this->isSQLiteConnection() ? '_' : '';
+
+        return $prefix . implode('_', [
             $this->key,
             Str::snake(class_basename($this->getModel())),
             $suffix,
         ]);
+    }
+
+    /**
+     * Check if the current connection is SQLite.
+     *
+     * @return bool
+     */
+    private function isSQLiteConnection(): bool
+    {
+        return $this->getModel()->getConnection() instanceof \Illuminate\Database\SQLiteConnection;
     }
 
     /**

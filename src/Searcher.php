@@ -586,10 +586,21 @@ class Searcher
                 }
             }
 
+            // PostgreSQL requires quoted identifiers for aliases starting with digits
+            $keyAlias = $modelToSearchThrough->getModelKey();
+            $orderAlias = $modelToSearchThrough->getModelKey('order');
+            $modelOrderAlias = $modelToSearchThrough->getModelKey('model_order');
+
+            if ($this->isPostgreSQLConnection()) {
+                $keyAlias = '"' . $keyAlias . '"';
+                $orderAlias = '"' . $orderAlias . '"';
+                $modelOrderAlias = '"' . $modelOrderAlias . '"';
+            }
+
             return array_filter([
-                DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
-                DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
-                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
+                DB::raw("{$qualifiedKeyName} as {$keyAlias}"),
+                DB::raw("{$qualifiedOrderByColumnName} as {$orderAlias}"),
+                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelOrderAlias}") : null,
             ]);
         })->all();
     }
@@ -602,15 +613,22 @@ class Searcher
      */
     protected function makeOrderBy(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order');
+
+        // PostgreSQL requires quoted identifiers for aliases starting with digits
+        if ($this->isPostgreSQLConnection()) {
+            $modelOrderKeys = $modelOrderKeys->map(fn ($key) => '"' . $key . '"');
+        }
+
+        $modelOrderKeysStr = $modelOrderKeys->implode(',');
 
         // SQLite and PostgreSQL have stricter column resolution in UNION queries,
         // so we use a different approach that's more compatible
         if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
-            return $this->makeCompatibleOrderBy($modelOrderKeys);
+            return $this->makeCompatibleOrderBy($modelOrderKeysStr);
         }
 
-        return "COALESCE({$modelOrderKeys}, NULL)";
+        return "COALESCE({$modelOrderKeysStr}, NULL)";
     }
 
     /**
@@ -643,15 +661,22 @@ class Searcher
      */
     protected function makeOrderByModel(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order');
+
+        // PostgreSQL requires quoted identifiers for aliases starting with digits
+        if ($this->isPostgreSQLConnection()) {
+            $modelOrderKeys = $modelOrderKeys->map(fn ($key) => '"' . $key . '"');
+        }
+
+        $modelOrderKeysStr = $modelOrderKeys->implode(',');
 
         // SQLite and PostgreSQL have stricter column resolution in UNION queries,
         // so we use a different approach that's more compatible
         if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
-            return $this->makeCompatibleOrderBy($modelOrderKeys);
+            return $this->makeCompatibleOrderBy($modelOrderKeysStr);
         }
 
-        return "COALESCE({$modelOrderKeys}, NULL)";
+        return "COALESCE({$modelOrderKeysStr}, NULL)";
     }
 
     /**
