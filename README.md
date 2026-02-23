@@ -31,13 +31,13 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
 * In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
 * Works with MySQL, PostgreSQL, and SQLite.
-* Zero third-party dependencies
+* Zero third-party dependencies.
 
 > **Driver Compatibility:** Features like Full-Text Search and SOUNDS LIKE use database-specific implementations. MySQL uses native full-text indexes, PostgreSQL uses `tsquery` (requiring the `pg_trgm` extension for similarity search), and SQLite uses LIKE-based alternatives. The package automatically detects your connection and uses the appropriate strategy.
 
 ### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 
-## Blog post
+## Blog Post
 
 If you want to know more about this package's background, please read [the blog post](https://protone.media/blog/search-through-multiple-eloquent-models-with-our-latest-laravel-package).
 
@@ -84,7 +84,7 @@ Search::new()
     ->search('howto');
 ```
 
-There's also an `when` method to apply certain clauses based on another condition:
+There's also a `when` method to apply certain clauses based on another condition:
 
 ```php
 Search::new()
@@ -106,7 +106,7 @@ Search::add(Post::class, 'title')
 
 ### Wildcards
 
-By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to begin with as well, you can call the `beginWithWildcard` method. This will result in `%apple%` and `%ios%`.
+By default, we split up the search term, and each keyword will get a wildcard symbol to do partial matching. Practically, this means the search term `apple ios` will result in `apple%` and `ios%`. If you want a wildcard symbol to begin with as well, you can call the `beginWithWildcard` method. This will result in `%apple%` and `%ios%`.
 
 ```php
 Search::add(Post::class, 'title')
@@ -142,7 +142,7 @@ In this example, only records with the exact title "Laravel" will be returned, n
 
 ### Multi-word search
 
-Multi-word search is supported out of the box. Simply wrap your phrase into double-quotes.
+Multi-word search is supported out of the box. Simply wrap your phrase in double quotes.
 
 ```php
 Search::add(Post::class, 'title')
@@ -294,7 +294,7 @@ Search::new()
 
 ### Eager load relationships
 
-Not much to explain here, but this is supported as well :)
+Eager loading relationships is fully supported as well.
 
 ```php
 Search::add(Post::with('comments'), 'title')
@@ -326,7 +326,7 @@ Search::add(Post::published(), 'title')
 
 ### Model Identifier
 
-You can use the `includeModelType` to add the model type to the search result.
+You can use the `includeModelType` method to add the model type to the search result.
 
 ```php
 Search::add(Post::class, 'title')
@@ -433,7 +433,7 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 * [`Laravel Paddle`](https://github.com/protonemedia/laravel-paddle): Paddle.com API integration for Laravel with support for webhooks/events.
 * [`Laravel Task Runner`](https://github.com/protonemedia/laravel-task-runner): Write Shell scripts like Blade Components and run them locally or on a remote server.
 * [`Laravel Verify New Email`](https://github.com/protonemedia/laravel-verify-new-email): This package adds support for verifying new email addresses: when a user updates its email address, it won't replace the old one until the new one is verified.
-* [`Laravel XSS Protection`](https://github.com/protonemedia/laravel-xss-protection): Laravel Middleware to protect your app against Cross-site scripting (XSS). It sanitizes request input, and it can sanatize Blade echo statements.
+* [`Laravel XSS Protection`](https://github.com/protonemedia/laravel-xss-protection): Laravel Middleware to protect your app against Cross-site scripting (XSS). It sanitizes request input, and it can sanitize Blade echo statements.
 
 ### Security
 
@@ -450,4 +450,4 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 
 ## Treeware
 
-This package is [Treeware](https://treeware.earth). If you use it in production, we ask that you [**buy the world a tree**](https://plant.treeware.earth/pascalbaljetmedia/laravel-cross-eloquent-search) to thank us for our work. By contributing to the Treeware forest, you'll create employment for local families and restoring wildlife habitats.
+This package is [Treeware](https://treeware.earth). If you use it in production, we ask that you [**buy the world a tree**](https://plant.treeware.earth/pascalbaljetmedia/laravel-cross-eloquent-search) to thank us for our work. By contributing to the Treeware forest, you'll create employment for local families and restore wildlife habitats.
