@@ -622,6 +622,29 @@ class SearchTest extends TestCase
 
     #[Test]
     /** @test */
+    public function it_can_add_query_string_to_pagination_links()
+    {
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'foo']);
+        $postC = Post::create(['title' => 'foo']);
+
+        $results = Search::add(Post::class, 'title')
+            ->paginate(2, 'page', 1)
+            ->withQueryString(['filter' => 'active', 'sort' => 'date'])
+            ->search('foo');
+
+        $this->assertInstanceOf(LengthAwarePaginator::class, $results);
+        $this->assertEquals(3, $results->total());
+
+        // Check that query string params are in the pagination URLs
+        $nextPageUrl = $results->nextPageUrl();
+        $this->assertStringContainsString('filter=active', $nextPageUrl);
+        $this->assertStringContainsString('sort=date', $nextPageUrl);
+        $this->assertStringContainsString('page=2', $nextPageUrl);
+    }
+
+    #[Test]
+    /** @test */
     public function it_includes_a_model_identifier_to_search_results()
     {
         Post::create(['title' => 'bar']);
