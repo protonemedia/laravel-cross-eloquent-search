@@ -6,12 +6,14 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use PHPUnit\Framework\Attributes\Test;
 use ProtoneMedia\LaravelCrossEloquentSearch\OrderByRelevanceException;
 use ProtoneMedia\LaravelCrossEloquentSearch\Search;
 use ProtoneMedia\LaravelCrossEloquentSearch\Searcher;
 
 class SearchTest extends TestCase
 {
+    #[Test]
     /** @test */
     public function it_can_search_two_models_and_orders_by_updated_at_by_default()
     {
@@ -41,6 +43,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->last()->is($postA));
     }
 
+    #[Test]
     /** @test */
     public function it_can_search_in_multiple_columns()
     {
@@ -58,6 +61,7 @@ class SearchTest extends TestCase
         $this->assertFalse($results->contains($postB));
     }
 
+    #[Test]
     /** @test */
     public function it_can_count_the_results()
     {
@@ -73,6 +77,7 @@ class SearchTest extends TestCase
         $this->assertEquals(3, $count);
     }
 
+    #[Test]
     /** @test */
     public function it_respects_table_prefixes()
     {
@@ -90,6 +95,7 @@ class SearchTest extends TestCase
         $this->assertEquals(3, $count);
     }
 
+    #[Test]
     /** @test */
     public function it_can_search_for_a_phrase()
     {
@@ -107,6 +113,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains($postB));
     }
 
+    #[Test]
     /** @test */
     public function it_has_an_option_to_dont_split_the_search_term()
     {
@@ -125,6 +132,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains($postB));
     }
 
+    #[Test]
     /** @test */
     public function it_has_an_option_to_ignore_the_case()
     {
@@ -148,6 +156,7 @@ class SearchTest extends TestCase
         $this->assertCount(2, $results);
     }
 
+    #[Test]
     /** @test */
     public function it_has_a_method_to_parse_the_terms()
     {
@@ -166,6 +175,7 @@ class SearchTest extends TestCase
         $this->assertEquals(['0foo', '1bar'], $array);
     }
 
+    #[Test]
     /** @test */
     public function it_can_search_without_a_term()
     {
@@ -182,6 +192,7 @@ class SearchTest extends TestCase
         $this->assertCount(4, $results);
     }
 
+    #[Test]
     /** @test */
     public function it_can_conditionally_add_queries()
     {
@@ -199,6 +210,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->first()->is($postA));
     }
 
+    #[Test]
     /** @test */
     public function it_can_add_many_models_at_once()
     {
@@ -216,6 +228,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains($videoB));
     }
 
+    #[Test]
     /** @test */
     public function it_can_search_on_the_left_side_of_the_term()
     {
@@ -225,6 +238,7 @@ class SearchTest extends TestCase
         $this->assertCount(0, Search::add(Video::class, 'title')->endWithWildcard(false)->search('fo'));
     }
 
+    #[Test]
     /** @test */
     public function it_can_use_the_sounds_like_operator()
     {
@@ -234,6 +248,7 @@ class SearchTest extends TestCase
         $this->assertCount(1, Search::add(Video::class, 'title')->soundsLike()->search('larafel'));
     }
 
+    #[Test]
     /** @test */
     public function it_can_search_twice_in_the_same_table()
     {
@@ -250,6 +265,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains($videoB));
     }
 
+    #[Test]
     /** @test */
     public function it_lets_you_specify_a_custom_order_by_column_and_direction()
     {
@@ -269,6 +285,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->last()->is($postA));
     }
 
+    #[Test]
     /** @test */
     public function it_accepts_a_query_builder()
     {
@@ -286,6 +303,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->first()->is($videoA));
     }
 
+    #[Test]
     /** @test */
     public function it_can_paginate_the_results()
     {
@@ -314,6 +332,7 @@ class SearchTest extends TestCase
         $this->assertTrue($resultsPage2->last()->is($videoA));
     }
 
+    #[Test]
     /** @test */
     public function it_can_eager_load_relations()
     {
@@ -333,6 +352,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->first()->relationLoaded('comments'));
     }
 
+    #[Test]
     /** @test */
     public function it_can_search_through_relations()
     {
@@ -383,6 +403,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains('Post4'));     // because comment4
     }
 
+    #[Test]
     /** @test */
     public function it_doesnt_add_term_constraints_when_the_search_query_is_empty()
     {
@@ -398,6 +419,7 @@ class SearchTest extends TestCase
         $this->assertCount(2, $results);
     }
 
+    #[Test]
     /** @test */
     public function it_can_sort_by_model_order()
     {
@@ -444,6 +466,7 @@ class SearchTest extends TestCase
         $this->assertInstanceOf(Comment::class, $results->get(0));
     }
 
+    #[Test]
     /** @test */
     public function it_respects_the_regular_order_when_ordering_by_model_type()
     {
@@ -464,6 +487,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->last()->is($postA));
     }
 
+    #[Test]
     /** @test */
     public function it_respects_the_relevance_order_when_ordering_by_model_type()
     {
@@ -486,6 +510,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->last()->is($postA), $results->toJson());
     }
 
+    #[Test]
     /** @test */
     public function it_cant_order_by_relevance_when_searching_through_nested_relationships()
     {
@@ -507,6 +532,7 @@ class SearchTest extends TestCase
         $this->fail('Should have thrown OrderByRelevanceException');
     }
 
+    #[Test]
     /** @test */
     public function it_can_sort_by_word_occurrence()
     {
@@ -523,6 +549,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->first()->is($videoB));
     }
 
+    #[Test]
     /** @test */
     public function it_doesnt_fail_when_the_terms_are_empty()
     {
@@ -537,6 +564,7 @@ class SearchTest extends TestCase
         $this->assertCount(2, $results);
     }
 
+    #[Test]
     /** @test */
     public function it_uses_length_aware_paginator_by_default()
     {
@@ -549,6 +577,7 @@ class SearchTest extends TestCase
         $this->assertInstanceOf(LengthAwarePaginator::class, $results);
     }
 
+    #[Test]
     /** @test */
     public function it_can_use_simple_paginator()
     {
@@ -562,6 +591,7 @@ class SearchTest extends TestCase
         $this->assertInstanceOf(Paginator::class, $results);
     }
 
+    #[Test]
     /** @test */
     public function it_can_simple_paginate_the_results()
     {
@@ -590,6 +620,7 @@ class SearchTest extends TestCase
         $this->assertTrue($resultsPage2->last()->is($videoA));
     }
 
+    #[Test]
     /** @test */
     public function it_includes_a_model_identifier_to_search_results()
     {
@@ -607,6 +638,7 @@ class SearchTest extends TestCase
         $this->assertEquals($search->toArray()['data'][1]['type'], class_basename(Video::class));
     }
 
+    #[Test]
     /** @test */
     public function it_includes_a_custom_model_identifier_to_search_results()
     {
@@ -622,6 +654,7 @@ class SearchTest extends TestCase
         $this->assertEquals($search->toArray()['data'][0]['type'], 'awesome_video');
     }
 
+    #[Test]
     /** @test */
     public function it_can_tap_into_the_searcher_instance()
     {
@@ -643,6 +676,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->last()->is($postB));
     }
 
+    #[Test]
     /** @test */
     public function it_supports_full_text_search()
     {
@@ -686,6 +720,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains($pageA));
     }
 
+    #[Test]
     /** @test */
     public function it_supports_full_text_search_on_relations()
     {
@@ -713,6 +748,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->contains($videoC));
     }
 
+    #[Test]
     /** @test */
     public function it_returns_data_consistently()
     {
@@ -741,6 +777,7 @@ class SearchTest extends TestCase
         $this->assertTrue($resultB->first()->is($postA));
     }
 
+    #[Test]
     /** @test */
     public function it_can_conditionally_apply_ordering()
     {
@@ -761,6 +798,7 @@ class SearchTest extends TestCase
         $this->assertTrue($results->last()->is($postB));
     }
 
+    #[Test]
     /** @test */
     public function it_can_perform_exact_match_search()
     {
@@ -771,6 +809,7 @@ class SearchTest extends TestCase
         $this->assertCount(1, Search::add(Video::class, 'title')->exactMatch()->search('foo'));
     }
 
+    #[Test]
     /** @test */
     public function it_supports_full_text_search_with_mixed_direct_and_relation_columns()
     {
