@@ -33,6 +33,8 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 * Works with MySQL, PostgreSQL, and SQLite.
 * Zero third-party dependencies
 
+> **Driver Compatibility:** Features like Full-Text Search and SOUNDS LIKE use database-specific implementations. MySQL uses native full-text indexes, PostgreSQL uses `tsquery` (requiring the `pg_trgm` extension for similarity search), and SQLite uses LIKE-based alternatives. The package automatically detects your connection and uses the appropriate strategy.
+
 ### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 
 ## Blog post
