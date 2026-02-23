@@ -2,11 +2,9 @@
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\PostgresConnection;
 use Illuminate\Database\SQLiteConnection;
 
-trait HandlesDatabaseDrivers
+trait HandlesSQLite
 {
     /**
      * Returns true if the current connection driver is SQLite.
@@ -14,28 +12,6 @@ trait HandlesDatabaseDrivers
     protected function isSQLiteConnection(): bool
     {
         return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof SQLiteConnection;
-    }
-
-    /**
-     * Returns true if the current connection driver is PostgreSQL.
-     */
-    protected function isPostgreSQLConnection(): bool
-    {
-        return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof PostgresConnection;
-    }
-
-    /**
-     * Add database-specific full-text search to query.
-     */
-    protected function addFullTextSearchToQuery($query, array $columns, string $terms, array $options = []): void
-    {
-        if ($this->isPostgreSQLConnection()) {
-            $this->addPostgreSQLFullTextSearch($query, $columns, $terms, $options);
-        } elseif ($this->isSQLiteConnection()) {
-            $this->addSQLiteFullTextSearch($query, $columns, $terms, $options);
-        } else {
-            $query->orWhereFullText($columns, $terms, $options);
-        }
     }
 
     /**
@@ -103,45 +79,5 @@ trait HandlesDatabaseDrivers
                 }
             }
         });
-    }
-
-    /**
-     * Add PostgreSQL-specific full-text search using to_tsvector/to_tsquery.
-     */
-    protected function addPostgreSQLFullTextSearch($query, array $columns, string $terms, array $options = []): void
-    {
-        $escapedTerms = str_replace("'", "''", $terms);
-
-        $tsqueryParts = [];
-        foreach (explode(' ', trim($escapedTerms)) as $term) {
-            $term = trim($term);
-            if (empty($term)) {
-                continue;
-            }
-
-            if (str_starts_with($term, '-')) {
-                $tsqueryParts[] = '!' . ltrim($term, '-') . ':*';
-            } elseif (str_starts_with($term, '+')) {
-                $tsqueryParts[] = ltrim($term, '+') . ':*';
-            } else {
-                $tsqueryParts[] = $term . ':*';
-            }
-        }
-
-        $tsquery = implode(' & ', $tsqueryParts);
-
-        if (count($columns) === 1) {
-            $column = $columns[0];
-            $query->orWhereRaw(
-                "to_tsvector('english', {$column}) @@ to_tsquery('english', ?)",
-                [$tsquery]
-            );
-        } else {
-            $columnExpr = implode(" || ' ' || ", $columns);
-            $query->orWhereRaw(
-                "to_tsvector('english', {$columnExpr}) @@ to_tsquery('english', ?)",
-                [$tsquery]
-            );
-        }
     }
 }

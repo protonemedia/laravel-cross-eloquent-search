@@ -17,7 +17,8 @@ use Illuminate\Support\Traits\Conditionable;
 class Searcher
 {
     use Conditionable;
-    use HandlesDatabaseDrivers;
+    use HandlesSQLite;
+    use HandlesPostgreSQL;
 
     /**
      * Collection of models to search through.
@@ -876,4 +877,17 @@ class Searcher
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
     }
 
+    /**
+     * Add database-specific full-text search to query.
+     */
+    protected function addFullTextSearchToQuery($query, array $columns, string $terms, array $options = []): void
+    {
+        if ($this->isPostgreSQLConnection()) {
+            $this->addPostgreSQLFullTextSearch($query, $columns, $terms, $options);
+        } elseif ($this->isSQLiteConnection()) {
+            $this->addSQLiteFullTextSearch($query, $columns, $terms, $options);
+        } else {
+            $query->orWhereFullText($columns, $terms, $options);
+        }
+    }
 }
