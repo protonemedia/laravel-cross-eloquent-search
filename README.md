@@ -227,6 +227,20 @@ Search::add(Post::class, 'title')
     ->search('build');
 ```
 
+If you don't want to use Laravel's paginator, you can use `limit`, `offset`, or `forPage`:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+
+    ->offset(10)
+    ->limit(10)
+    // or
+    ->forPage(2, 10)
+
+    ->search('build');
+```
+
 #### Query String Parameters
 
 To retain query string parameters in pagination links, use the `withQueryString` method. Without arguments, it uses the current request's query string:
