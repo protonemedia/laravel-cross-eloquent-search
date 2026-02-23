@@ -37,7 +37,9 @@ class CreateTables extends Migration
             $table->date('published_at')->nullable();
             $table->timestamps();
 
-            $table->fullText('title');
+            if (config('database.default') === 'mysql') {
+                $table->fullText('title');
+            }
         });
 
         Schema::create('blogs', function (Blueprint $table) {
