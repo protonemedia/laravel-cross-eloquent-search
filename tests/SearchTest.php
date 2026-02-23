@@ -365,7 +365,7 @@ class SearchTest extends TestCase
 
         $video = Video::create(['title' => 'foo', 'published_at' => now()]);
 
-        $results = Search::add(Post::withCount('comments')->select('id', 'title'), 'title', 'comments_count')
+        $results = Search::add(Post::select('id', 'title')->withCount('comments'), 'title', 'comments_count')
             ->add(Video::class, 'title', 'published_at')
             ->orderByDesc()
             ->search('foo');
