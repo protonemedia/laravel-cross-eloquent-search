@@ -93,15 +93,13 @@ Search::new()
     ->search('howto');
 ```
 
-You can use the `tap` method to perform side effects or modify the searcher instance during the search configuration chain:
+In addition, you can use the `tap` method to tap into the searcher instance:
 
 ```php
 Search::add(Post::class, 'title')
     ->add(Video::class, 'title')
     ->tap(function ($searcher) {
-        // Perform side effects, logging, or modifications
         Log::info('Search configuration', ['models' => $searcher->getModelsToSearchThrough()]);
-        $searcher->orderByDesc(); // Modify the searcher
     })
     ->search('laravel');
 ```
@@ -426,12 +424,12 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ### Security
 
-If you discover any security-related issues, please email pascal@protone.media instead of using the issue tracker.
+If you discover any security-related issues, please email <pascal@protone.media> instead of using the issue tracker.
 
 ## Credits
 
-- [Pascal Baljet](https://github.com/protonemedia)
-- [All Contributors](../../contributors)
+* [Pascal Baljet](https://github.com/protonemedia)
+* [All Contributors](../../contributors)
 
 ## License
 
