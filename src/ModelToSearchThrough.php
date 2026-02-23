@@ -138,11 +138,23 @@ class ModelToSearchThrough
      */
     public function getModelKey($suffix = 'key'): string
     {
-        return implode('_', [
+        $prefix = $this->isSQLiteConnection() ? '_' : '';
+
+        return $prefix . implode('_', [
             $this->key,
             Str::snake(class_basename($this->getModel())),
             $suffix,
         ]);
+    }
+
+    /**
+     * Check if the current connection is SQLite.
+     *
+     * @return bool
+     */
+    private function isSQLiteConnection(): bool
+    {
+        return $this->getModel()->getConnection() instanceof \Illuminate\Database\SQLiteConnection;
     }
 
     /**
@@ -240,10 +252,21 @@ class ModelToSearchThrough
         }
 
         $collection = Collection::make();
+        $directColumns = Collection::make();
 
         foreach ($this->columns as $relation => $columns) {
-            $collection->push(
-                $this->clone()->setColumns(Collection::wrap($columns))->setFullTextRelation($relation)
+            if (is_int($relation)) {
+                $directColumns->push($columns);
+            } else {
+                $collection->push(
+                    $this->clone()->setColumns(Collection::wrap($columns))->setFullTextRelation($relation)
+                );
+            }
+        }
+
+        if ($directColumns->isNotEmpty()) {
+            $collection->prepend(
+                $this->clone()->setColumns($directColumns)->setFullTextRelation(null)
             );
         }
 

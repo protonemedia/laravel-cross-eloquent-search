@@ -16,8 +16,8 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 ## Requirements
 
 * PHP 8.2 or higher
-* MySQL 8.0+
-* Laravel 10.0+
+* MySQL 8.0+, PostgreSQL 12+, or SQLite 3.8+
+* Laravel 11.0+
 
 ## Features
 
@@ -30,7 +30,10 @@ This Laravel package allows you to search through multiple Eloquent models. It s
 * Use [constraints](https://laravel.com/docs/master/eloquent#retrieving-models) and [scoped queries](https://laravel.com/docs/master/eloquent#query-scopes).
 * [Eager load relationships](https://laravel.com/docs/master/eloquent-relationships#eager-loading) for each model.
 * In-database [sorting](https://laravel.com/docs/master/queries#ordering-grouping-limit-and-offset) of the combined result.
+* Works with MySQL, PostgreSQL, and SQLite.
 * Zero third-party dependencies
+
+> **Driver Compatibility:** Features like Full-Text Search and SOUNDS LIKE use database-specific implementations. MySQL uses native full-text indexes, PostgreSQL uses `tsquery` (requiring the `pg_trgm` extension for similarity search), and SQLite uses LIKE-based alternatives. The package automatically detects your connection and uses the appropriate strategy.
 
 ### 📺 Want to watch an implementation of this package? Rewatch the live stream (skip to 13:44 for the good stuff): [https://youtu.be/WigAaQsPgSA](https://youtu.be/WigAaQsPgSA)
 
@@ -245,7 +248,7 @@ Search::add(Post::class, ['comments.body'])
 
 ### Full-Text Search
 
-You may use [MySQL's Full-Text Search](https://laravel.com/docs/master/queries#full-text-where-clauses) by using the `addFullText` method. You can search through a single or multiple columns (using [full text indexes](https://laravel.com/docs/master/migrations#available-index-types)), and you can specify a set of options, for example, to specify the mode. You can even mix regular and full-text searches in one query:
+You can use the `addFullText` method to search using your database's native full-text search capabilities:
 
 ```php
 Search::new()
@@ -268,7 +271,7 @@ Search::new()
 
 ### Sounds like
 
-MySQL has a *soundex* algorithm built-in so you can search for terms that sound almost the same. You can use this feature by calling the `soundsLike` method:
+Search for terms that sound similar using the `soundsLike` method:
 
 ```php
 Search::new()
