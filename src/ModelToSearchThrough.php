@@ -4,6 +4,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -207,12 +208,24 @@ class ModelToSearchThrough
             return false;
         }
 
-        return Collection::make($columns)->contains(function ($column) use ($alias) {
-            if ($column === $alias) {
+        $grammar = $this->builder->getQuery()->grammar;
+
+        return Collection::make($columns)->contains(function ($column) use ($alias, $grammar) {
+            if (is_string($column) && $column === $alias) {
                 return true;
             }
 
-            $column = trim((string) $column);
+            if ($column instanceof Expression) {
+                $column = method_exists($column, 'getValue')
+                    ? $column->getValue($grammar)
+                    : (string) $column;
+            }
+
+            if (! is_string($column)) {
+                return false;
+            }
+
+            $column = trim($column);
 
             return (bool) preg_match('/\bas\s+[`"\[]?'.preg_quote($alias, '/').'[`"\]]?\s*$/i', $column);
         });
