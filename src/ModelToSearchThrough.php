@@ -185,7 +185,17 @@ class ModelToSearchThrough
      */
     public function getQualifiedOrderByColumnName(): string
     {
-        return $this->qualifyColumn($this->orderByColumn);
+        if (str_contains($this->orderByColumn, '.')) {
+            return $this->orderByColumn;
+        }
+
+        $table = $this->getModel()->getTable();
+
+        if ($this->getModel()->getConnection()->getSchemaBuilder()->hasColumn($table, $this->orderByColumn)) {
+            return $this->qualifyColumn($this->orderByColumn);
+        }
+
+        return $this->orderByColumn;
     }
 
     /**
