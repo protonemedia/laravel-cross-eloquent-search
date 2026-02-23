@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
@@ -7,7 +9,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -18,7 +19,11 @@ use Illuminate\Support\Traits\Tappable;
 
 class Searcher
 {
-    use Conditionable, Tappable;
+    use Conditionable;
+    use HandlesMySQL;
+    use HandlesPostgreSQL;
+    use HandlesSQLite;
+    use Tappable;
 
     /**
      * Collection of models to search through.
@@ -119,8 +124,6 @@ class Searcher
 
     /**
      * Sort the results in ascending order.
-     *
-     * @return self
      */
     public function orderByAsc(): self
     {
@@ -131,8 +134,6 @@ class Searcher
 
     /**
      * Sort the results in descending order.
-     *
-     * @return self
      */
     public function orderByDesc(): self
     {
@@ -143,8 +144,6 @@ class Searcher
 
     /**
      * Sort the results in relevance order.
-     *
-     * @return self
      */
     public function orderByRelevance(): self
     {
@@ -155,8 +154,6 @@ class Searcher
 
     /**
      * Sort the results in order of the given models.
-     *
-     * @return self
      */
     public function orderByModel($modelClasses): self
     {
@@ -177,9 +174,6 @@ class Searcher
 
     /**
      * Enable the inclusion of the model type in the search results.
-     *
-     * @param string $key
-     * @return self
      */
     public function includeModelType(string $key = 'type'): self
     {
@@ -191,13 +185,11 @@ class Searcher
     /**
      * Add a model to search through.
      *
-     * @param \Illuminate\Database\Eloquent\Builder|string $query
-     * @param string|array|\Illuminate\Support\Collection $columns
-     * @param string $orderByColumn
-     * @param bool $fullText
-     * @return self
+     * @param  \Illuminate\Database\Eloquent\Builder|string  $query
+     * @param  string|array|\Illuminate\Support\Collection  $columns
+     * @param  bool  $fullText
      */
-    public function add($query, $columns = null, string $orderByColumn = null): self
+    public function add($query, $columns = null, ?string $orderByColumn = null): self
     {
         /** @var Builder $builder */
         $builder = is_string($query) ? $query::query() : $query;
@@ -222,7 +214,7 @@ class Searcher
         return $this;
     }
 
-    public function addFullText($query, $columns = null, array $options = [], string $orderByColumn = null): self
+    public function addFullText($query, $columns = null, array $options = [], ?string $orderByColumn = null): self
     {
         $builder = is_string($query) ? $query::query() : $query;
 
@@ -243,8 +235,7 @@ class Searcher
     /**
      * Loop through the queries and add them.
      *
-     * @param mixed $value
-     * @return self
+     * @param  mixed  $value
      */
     public function addMany($queries): self
     {
@@ -257,9 +248,6 @@ class Searcher
 
     /**
      * Set the 'orderBy' column of the latest added model.
-     *
-     * @param string $orderByColumn
-     * @return self
      */
     public function orderBy(string $orderByColumn): self
     {
@@ -270,9 +258,6 @@ class Searcher
 
     /**
      * Ignore case of terms.
-     *
-     * @param boolean $state
-     * @return self
      */
     public function ignoreCase(bool $state = true): self
     {
@@ -283,9 +268,6 @@ class Searcher
 
     /**
      * Let's each search term begin with a wildcard.
-     *
-     * @param boolean $state
-     * @return self
      */
     public function beginWithWildcard(bool $state = true): self
     {
@@ -296,9 +278,6 @@ class Searcher
 
     /**
      * Let's each search term end with a wildcard.
-     *
-     * @param boolean $state
-     * @return self
      */
     public function endWithWildcard(bool $state = true): self
     {
@@ -309,8 +288,6 @@ class Searcher
 
     /**
      * Use 'sounds like' operator instead of 'like'.
-     *
-     * @return self
      */
     public function soundsLike(bool $state = true): self
     {
@@ -324,16 +301,15 @@ class Searcher
     /**
      * Sets the pagination properties.
      *
-     * @param integer $perPage
-     * @param string $pageName
-     * @param int|null $page
-     * @return self
+     * @param  int  $perPage
+     * @param  string  $pageName
+     * @param  int|null  $page
      */
     public function paginate($perPage = 15, $pageName = 'page', $page = null): self
     {
-        $this->page           = $page ?: Paginator::resolveCurrentPage($pageName);
-        $this->pageName       = $pageName;
-        $this->perPage        = $perPage;
+        $this->page = $page ?: Paginator::resolveCurrentPage($pageName);
+        $this->pageName = $pageName;
+        $this->perPage = $perPage;
         $this->simplePaginate = false;
 
         return $this;
@@ -342,10 +318,9 @@ class Searcher
     /**
      * Paginate using simple pagination.
      *
-     * @param integer $perPage
-     * @param string $pageName
-     * @param int|null $page
-     * @return self
+     * @param  int  $perPage
+     * @param  string  $pageName
+     * @param  int|null  $page
      */
     public function simplePaginate($perPage = 15, $pageName = 'page', $page = null): self
     {
@@ -358,12 +333,8 @@ class Searcher
 
     /**
      * Parse the terms and loop through them with the optional callable.
-     *
-     * @param string $terms
-     * @param callable $callback
-     * @return \Illuminate\Support\Collection
      */
-    public function parseTerms(string $terms, callable $callback = null): Collection
+    public function parseTerms(string $terms, ?callable $callback = null): Collection
     {
         $callback = $callback ?: fn () => null;
 
@@ -378,9 +349,7 @@ class Searcher
     /**
      * Creates a collection out of the given search term.
      *
-     * @param string $terms
      * @throws \ProtoneMedia\LaravelCrossEloquentSearch\EmptySearchQueryException
-     * @return self
      */
     protected function initializeTerms(string $terms): self
     {
@@ -409,10 +378,6 @@ class Searcher
      * Adds a where clause to the builder, which encapsulates
      * a series 'orWhere' clauses for each column and for
      * each search term.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $modelToSearchThrough
-     * @return void
      */
     public function addSearchQueryToBuilder(Builder $builder, ModelToSearchThrough $modelToSearchThrough): void
     {
@@ -421,7 +386,7 @@ class Searcher
         }
 
         $builder->where(function (Builder $query) use ($modelToSearchThrough) {
-            if (!$modelToSearchThrough->isFullTextSearch()) {
+            if (! $modelToSearchThrough->isFullTextSearch()) {
                 return $modelToSearchThrough->getColumns()->each(function ($column) use ($query, $modelToSearchThrough) {
                     Str::contains($column, '.')
                         ? $this->addNestedRelationToQuery($query, $column)
@@ -435,7 +400,8 @@ class Searcher
                     if ($relation = $modelToSearchThrough->getFullTextRelation()) {
                         $query->orWhereHas($relation, function ($relationQuery) use ($modelToSearchThrough) {
                             $relationQuery->where(function ($query) use ($modelToSearchThrough) {
-                                $query->orWhereFullText(
+                                $this->addFullTextSearchToQuery(
+                                    $query,
                                     $modelToSearchThrough->getColumns()->all(),
                                     $this->rawTerms,
                                     $modelToSearchThrough->getFullTextOptions()
@@ -443,7 +409,8 @@ class Searcher
                             });
                         });
                     } else {
-                        $query->orWhereFullText(
+                        $this->addFullTextSearchToQuery(
+                            $query,
                             $modelToSearchThrough->getColumns()->map(fn ($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
                             $this->rawTerms,
                             $modelToSearchThrough->getFullTextOptions()
@@ -456,8 +423,7 @@ class Searcher
     /**
      * Adds an 'orWhereHas' clause to the query to search through the given nested relation.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $column
+     * @param  string  $column
      * @return void
      */
     private function addNestedRelationToQuery(Builder $query, string $nestedRelationAndColumn)
@@ -478,31 +444,49 @@ class Searcher
     /**
      * Adds an 'orWhere' clause to search for each term in the given column.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param array|string $columns
+     * @param  \Illuminate\Database\Eloquent\Builder  $builder
+     * @param  array|string  $columns
      * @return void
      */
     private function addWhereTermsToQuery(Builder $query, $column)
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar($query->getConnection()))->wrap($column) : $column;
+        $column = $this->ignoreCase ? $query->getConnection()->getQueryGrammar()->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
-            $this->ignoreCase
-                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
-                : $query->orWhere($column, $this->whereOperator, $term);
+            if ($this->soundsLike) {
+                $this->addSoundsLikeToQuery($query, $column, $term);
+            } elseif ($this->ignoreCase) {
+                $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term]);
+            } else {
+                $query->orWhere($column, $this->whereOperator, $term);
+            }
         });
+    }
+
+    /**
+     * Add SOUNDS LIKE query based on driver capabilities.
+     */
+    private function addSoundsLikeToQuery(Builder $query, string $column, string $term): void
+    {
+        $cleanTerm = str_replace('%', '', $term);
+
+        if ($this->isPostgreSQLConnection()) {
+            $query->orWhereRaw("similarity({$column}, ?) > 0.3", [$cleanTerm]);
+        } elseif ($this->isSQLiteConnection()) {
+            $this->addSQLiteSoundsLikeToQuery($query, $column, $cleanTerm);
+        }
     }
 
     /**
      * Adds a word count so we can order by relevance.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $modelToSearchThrough
+     * @param  \Illuminate\Database\Eloquent\Builder  $builder
+     * @param  \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough  $modelToSearchThrough
      * @return void
      */
     private function addRelevanceQueryToBuilder($builder, $modelToSearchThrough)
     {
-        if (!$this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
+        if (! $this->isOrderingByRelevance() || $this->termsWithoutWildcards->isEmpty()) {
             return;
         }
 
@@ -510,20 +494,28 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
+        $lengthFunctionName = $this->isSQLiteConnection()
+            ? $this->getSQLiteStringLengthFunction()
+            : 'CHAR_LENGTH';
+
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $lengthFunctionName) {
             $connection = $modelToSearchThrough->getModel()->getConnection();
             $prefix = $connection->getTablePrefix();
-            $field = (new MySqlGrammar($connection))->wrap($prefix . $field);
+            $field = $connection->getQueryGrammar()->wrap($prefix.$field);
 
-            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+            return $this->termsWithoutWildcards->map(function ($term) use ($field, $lengthFunctionName) {
                 return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
-                    'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
+                    'expression' => sprintf(
+                        'COALESCE(%1$s(LOWER(%2$s)) - %1$s(REPLACE(LOWER(%2$s), ?, ?)), 0)',
+                        $lengthFunctionName,
+                        $field
+                    ),
+                    'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
         });
 
-        $selects  = $expressionsAndBindings->map->expression->implode(' + ');
+        $selects = $expressionsAndBindings->map->expression->implode(' + ');
         $bindings = $expressionsAndBindings->flatMap->bindings->all();
 
         $builder->selectRaw("{$selects} as terms_count", $bindings);
@@ -532,20 +524,28 @@ class Searcher
     /**
      * Builds an array with all qualified columns for
      * both the ids and ordering.
-     *
-     * @param \ProtoneMedia\LaravelCrossEloquentSearch\ModelToSearchThrough $currentModel
-     * @return array
      */
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
-            $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
+            $qualifiedKeyName = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('key')
+                : 'null';
+            $qualifiedOrderByColumnName = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('order')
+                : 'null';
+            $modelOrderKey = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('model_order')
+                : 'null';
 
             if ($modelToSearchThrough === $currentModel) {
                 $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
 
-                $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
-                $qualifiedOrderByColumnName = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
+                $qualifiedKeyName = $prefix.$modelToSearchThrough->getQualifiedKeyName();
+                $orderColumn = $prefix.$modelToSearchThrough->getQualifiedOrderByColumnName();
+                $qualifiedOrderByColumnName = $this->isPostgreSQLConnection()
+                    ? $this->castPostgresForUnion($orderColumn)
+                    : $orderColumn;
 
                 if ($this->orderByModel) {
                     $modelOrderKey = array_search(
@@ -559,10 +559,16 @@ class Searcher
                 }
             }
 
+            $grammar = $modelToSearchThrough->getModel()->getConnection()->getQueryGrammar();
+
+            $keyAlias = $grammar->wrap($modelToSearchThrough->getModelKey());
+            $orderAlias = $grammar->wrap($modelToSearchThrough->getModelKey('order'));
+            $modelOrderAlias = $grammar->wrap($modelToSearchThrough->getModelKey('model_order'));
+
             return array_filter([
-                DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
-                DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
-                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
+                DB::raw("{$qualifiedKeyName} as {$keyAlias}"),
+                DB::raw("{$qualifiedOrderByColumnName} as {$orderAlias}"),
+                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelOrderAlias}") : null,
             ]);
         })->all();
     }
@@ -570,33 +576,43 @@ class Searcher
     /**
      * Implodes the qualified order keys with a comma and
      * wraps them in a COALESCE method.
-     *
-     * @return string
      */
     protected function makeOrderBy(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
+        $grammar = $this->modelsToSearchThrough->first()->getModel()->getConnection()->getQueryGrammar();
 
-        return "COALESCE({$modelOrderKeys})";
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')
+            ->map(fn ($key) => $grammar->wrap($key))
+            ->implode(',');
+
+        return match (true) {
+            $this->isSQLiteConnection() => $this->makeSQLiteOrderBy($modelOrderKeys),
+            $this->isPostgreSQLConnection() => $this->makePostgresOrderBy($modelOrderKeys),
+            default => $this->makeMySQLOrderBy($modelOrderKeys),
+        };
     }
 
     /**
      * Implodes the qualified orderByModel keys with a comma and
      * wraps them in a COALESCE method.
-     *
-     * @return string
      */
     protected function makeOrderByModel(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
+        $grammar = $this->modelsToSearchThrough->first()->getModel()->getConnection()->getQueryGrammar();
 
-        return "COALESCE({$modelOrderKeys})";
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')
+            ->map(fn ($key) => $grammar->wrap($key))
+            ->implode(',');
+
+        return match (true) {
+            $this->isSQLiteConnection() => $this->makeSQLiteOrderBy($modelOrderKeys),
+            $this->isPostgreSQLConnection() => $this->makePostgresOrderBy($modelOrderKeys),
+            default => $this->makeMySQLOrderBy($modelOrderKeys),
+        };
     }
 
     /**
      * Builds the search queries for each given pending model.
-     *
-     * @return \Illuminate\Support\Collection
      */
     protected function buildQueries(): Collection
     {
@@ -612,8 +628,6 @@ class Searcher
 
     /**
      * Returns a boolean wether the ordering is set to 'relevance'.
-     *
-     * @return boolean
      */
     private function isOrderingByRelevance(): bool
     {
@@ -621,11 +635,9 @@ class Searcher
     }
 
     /**
-      * Compiles all queries to one big one which binds everything together
-      * using UNION statements.
-      *
-      * @return
-      */
+     * Compiles all queries to one big one which binds everything together
+     * using UNION statements.
+     */
     protected function getCompiledQueryBuilder(): QueryBuilder
     {
         $queries = $this->buildQueries();
@@ -637,6 +649,15 @@ class Searcher
 
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
+
+        // SQLite and PostgreSQL require subquery wrapping for UNION ORDER BY
+        if ($this->isSQLiteConnection()) {
+            return $this->applySQLiteOrdering($firstQuery);
+        }
+
+        if ($this->isPostgreSQLConnection()) {
+            return $this->applyPostgresOrdering($firstQuery);
+        }
 
         if ($this->orderByModel) {
             $firstQuery->orderBy(
@@ -694,7 +715,7 @@ class Searcher
     /**
      * Get the models per type.
      *
-     * @param \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator $results
+     * @param  \Illuminate\Support\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator  $results
      * @return \Illuminate\Support\Collection
      */
     protected function getModelsPerType($results)
@@ -723,11 +744,8 @@ class Searcher
 
     /**
      * Retrieve the "count" result of the query.
-     *
-     * @param string $terms
-     * @return integer
      */
-    public function count(string $terms = null): int
+    public function count(?string $terms = null): int
     {
         $this->initializeTerms($terms ?: '');
 
@@ -739,10 +757,9 @@ class Searcher
      * models per type. Map the results to a Eloquent collection and set
      * the collection on the paginator (whenever used).
      *
-     * @param string $terms
      * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function search(string $terms = null)
+    public function search(?string $terms = null)
     {
         $this->initializeTerms($terms ?: '');
 
@@ -778,5 +795,19 @@ class Searcher
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
+    }
+
+    /**
+     * Add database-specific full-text search to query.
+     */
+    protected function addFullTextSearchToQuery($query, array $columns, string $terms, array $options = []): void
+    {
+        if ($this->isPostgreSQLConnection()) {
+            $this->addPostgreSQLFullTextSearch($query, $columns, $terms, $options);
+        } elseif ($this->isSQLiteConnection()) {
+            $this->addSQLiteFullTextSearch($query, $columns, $terms, $options);
+        } else {
+            $query->orWhereFullText($columns, $terms, $options);
+        }
     }
 }
