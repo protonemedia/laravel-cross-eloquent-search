@@ -113,6 +113,16 @@ class Searcher
     protected $page;
 
     /**
+     * Limit the amount of returned results.
+     */
+    protected ?int $limit = null;
+
+    /**
+     * Skip a given amount of returned results.
+     */
+    protected ?int $offset = null;
+
+    /**
      * Include the model type in the search results.
      */
     protected ?string $includeModelTypeWithKey = null;
@@ -343,6 +353,37 @@ class Searcher
         $this->paginate($perPage, $pageName, $page);
 
         $this->simplePaginate = true;
+
+        return $this;
+    }
+
+    /**
+     * Limit the amount of returned results.
+     */
+    public function limit(int $limit): self
+    {
+        $this->limit = $limit;
+
+        return $this;
+    }
+
+    /**
+     * Skip a given amount of returned results.
+     */
+    public function offset(int $offset): self
+    {
+        $this->offset = $offset;
+
+        return $this;
+    }
+
+    /**
+     * Set both limit and offset based on page and per-page values.
+     */
+    public function forPage(int $page, int $perPage): self
+    {
+        $this->limit($perPage);
+        $this->offset(max(0, ($page - 1) * $perPage));
 
         return $this;
     }
@@ -720,6 +761,14 @@ class Searcher
 
         // get all results or limit the results by pagination
         if (! $this->pageName) {
+            if (! is_null($this->offset)) {
+                $query->offset($this->offset);
+            }
+
+            if (! is_null($this->limit)) {
+                $query->limit($this->limit);
+            }
+
             return $query->get();
         }
 
