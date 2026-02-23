@@ -129,7 +129,7 @@ Search::add(Post::class, 'title')
 
 ### Exact Match
 
-If you want to perform exact matching without any wildcards, you can use the `exactMatch` method. This will disable both beginning and ending wildcards and use the exact equality operator (`=`) instead of the `LIKE` operator:
+If you want to perform exact matching without any wildcards, you can use the `exactMatch` method. This disables both beginning and ending wildcards and uses the exact equality operator (`=`) instead of the `LIKE` operator:
 
 ```php
 Search::add(Post::class, 'title')
