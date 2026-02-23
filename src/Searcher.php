@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -18,6 +17,9 @@ use Illuminate\Support\Traits\Conditionable;
 class Searcher
 {
     use Conditionable;
+    use HandlesMySQL;
+    use HandlesSQLite;
+    use HandlesPostgreSQL;
 
     /**
      * Collection of models to search through.
@@ -434,7 +436,8 @@ class Searcher
                     if ($relation = $modelToSearchThrough->getFullTextRelation()) {
                         $query->orWhereHas($relation, function ($relationQuery) use ($modelToSearchThrough) {
                             $relationQuery->where(function ($query) use ($modelToSearchThrough) {
-                                $query->orWhereFullText(
+                                $this->addFullTextSearchToQuery(
+                                    $query,
                                     $modelToSearchThrough->getColumns()->all(),
                                     $this->rawTerms,
                                     $modelToSearchThrough->getFullTextOptions()
@@ -442,7 +445,8 @@ class Searcher
                             });
                         });
                     } else {
-                        $query->orWhereFullText(
+                        $this->addFullTextSearchToQuery(
+                            $query,
                             $modelToSearchThrough->getColumns()->map(fn ($column) => $modelToSearchThrough->qualifyColumn($column))->all(),
                             $this->rawTerms,
                             $modelToSearchThrough->getFullTextOptions()
@@ -483,13 +487,31 @@ class Searcher
      */
     private function addWhereTermsToQuery(Builder $query, $column)
     {
-        $column = $this->ignoreCase ? (new MySqlGrammar($query->getConnection()))->wrap($column) : $column;
+        $column = $this->ignoreCase ? $query->getConnection()->getQueryGrammar()->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
-            $this->ignoreCase
-                ? $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term])
-                : $query->orWhere($column, $this->whereOperator, $term);
+            if ($this->soundsLike) {
+                $this->addSoundsLikeToQuery($query, $column, $term);
+            } elseif ($this->ignoreCase) {
+                $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term]);
+            } else {
+                $query->orWhere($column, $this->whereOperator, $term);
+            }
         });
+    }
+
+    /**
+     * Add SOUNDS LIKE query based on driver capabilities.
+     */
+    private function addSoundsLikeToQuery(Builder $query, string $column, string $term): void
+    {
+        $cleanTerm = str_replace('%', '', $term);
+
+        if ($this->isPostgreSQLConnection()) {
+            $query->orWhereRaw("similarity({$column}, ?) > 0.3", [$cleanTerm]);
+        } elseif ($this->isSQLiteConnection()) {
+            $this->addSQLiteSoundsLikeToQuery($query, $column, $cleanTerm);
+        }
     }
 
     /**
@@ -509,15 +531,23 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough) {
+        $lengthFunctionName = $this->isSQLiteConnection()
+            ? $this->getSQLiteStringLengthFunction()
+            : 'CHAR_LENGTH';
+
+        $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $lengthFunctionName) {
             $connection = $modelToSearchThrough->getModel()->getConnection();
             $prefix = $connection->getTablePrefix();
-            $field = (new MySqlGrammar($connection))->wrap($prefix . $field);
+            $field = $connection->getQueryGrammar()->wrap($prefix . $field);
 
-            return $this->termsWithoutWildcards->map(function ($term) use ($field) {
+            return $this->termsWithoutWildcards->map(function ($term) use ($field, $lengthFunctionName) {
                 return [
-                    'expression' => "COALESCE(CHAR_LENGTH(LOWER({$field})) - CHAR_LENGTH(REPLACE(LOWER({$field}), ?, ?)), 0)",
-                    'bindings'   => [Str::lower($term), Str::substr(Str::lower($term), 1)],
+                    'expression' => sprintf(
+                        'COALESCE(%1$s(LOWER(%2$s)) - %1$s(REPLACE(LOWER(%2$s), ?, ?)), 0)',
+                        $lengthFunctionName,
+                        $field
+                    ),
+                    'bindings' => [Str::lower($term), Str::substr(Str::lower($term), 1)],
                 ];
             });
         });
@@ -538,13 +568,24 @@ class Searcher
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
-            $qualifiedKeyName = $qualifiedOrderByColumnName = $modelOrderKey = 'null';
+            $qualifiedKeyName = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('key')
+                : 'null';
+            $qualifiedOrderByColumnName = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('order')
+                : 'null';
+            $modelOrderKey = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('model_order')
+                : 'null';
 
             if ($modelToSearchThrough === $currentModel) {
                 $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
 
                 $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
-                $qualifiedOrderByColumnName = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
+                $orderColumn = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
+                $qualifiedOrderByColumnName = $this->isPostgreSQLConnection()
+                    ? $this->castPostgresForUnion($orderColumn)
+                    : $orderColumn;
 
                 if ($this->orderByModel) {
                     $modelOrderKey = array_search(
@@ -558,10 +599,16 @@ class Searcher
                 }
             }
 
+            $grammar = $modelToSearchThrough->getModel()->getConnection()->getQueryGrammar();
+
+            $keyAlias = $grammar->wrap($modelToSearchThrough->getModelKey());
+            $orderAlias = $grammar->wrap($modelToSearchThrough->getModelKey('order'));
+            $modelOrderAlias = $grammar->wrap($modelToSearchThrough->getModelKey('model_order'));
+
             return array_filter([
-                DB::raw("{$qualifiedKeyName} as {$modelToSearchThrough->getModelKey()}"),
-                DB::raw("{$qualifiedOrderByColumnName} as {$modelToSearchThrough->getModelKey('order')}"),
-                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelToSearchThrough->getModelKey('model_order')}") : null,
+                DB::raw("{$qualifiedKeyName} as {$keyAlias}"),
+                DB::raw("{$qualifiedOrderByColumnName} as {$orderAlias}"),
+                $this->orderByModel ? DB::raw("{$modelOrderKey} as {$modelOrderAlias}") : null,
             ]);
         })->all();
     }
@@ -574,9 +621,17 @@ class Searcher
      */
     protected function makeOrderBy(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')->implode(',');
+        $grammar = $this->modelsToSearchThrough->first()->getModel()->getConnection()->getQueryGrammar();
 
-        return "COALESCE({$modelOrderKeys})";
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')
+            ->map(fn ($key) => $grammar->wrap($key))
+            ->implode(',');
+
+        return match (true) {
+            $this->isSQLiteConnection() => $this->makeSQLiteOrderBy($modelOrderKeys),
+            $this->isPostgreSQLConnection() => $this->makePostgresOrderBy($modelOrderKeys),
+            default => $this->makeMySQLOrderBy($modelOrderKeys),
+        };
     }
 
     /**
@@ -587,9 +642,17 @@ class Searcher
      */
     protected function makeOrderByModel(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')->implode(',');
+        $grammar = $this->modelsToSearchThrough->first()->getModel()->getConnection()->getQueryGrammar();
 
-        return "COALESCE({$modelOrderKeys})";
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')
+            ->map(fn ($key) => $grammar->wrap($key))
+            ->implode(',');
+
+        return match (true) {
+            $this->isSQLiteConnection() => $this->makeSQLiteOrderBy($modelOrderKeys),
+            $this->isPostgreSQLConnection() => $this->makePostgresOrderBy($modelOrderKeys),
+            default => $this->makeMySQLOrderBy($modelOrderKeys),
+        };
     }
 
     /**
@@ -636,6 +699,15 @@ class Searcher
 
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
+
+        // SQLite and PostgreSQL require subquery wrapping for UNION ORDER BY
+        if ($this->isSQLiteConnection()) {
+            return $this->applySQLiteOrdering($firstQuery);
+        }
+
+        if ($this->isPostgreSQLConnection()) {
+            return $this->applyPostgresOrdering($firstQuery);
+        }
 
         if ($this->orderByModel) {
             $firstQuery->orderBy(
@@ -777,5 +849,19 @@ class Searcher
         })
             ->pipe(fn (Collection $models) => new EloquentCollection($models))
             ->when($this->pageName, fn (EloquentCollection $models) => $results->setCollection($models));
+    }
+
+    /**
+     * Add database-specific full-text search to query.
+     */
+    protected function addFullTextSearchToQuery($query, array $columns, string $terms, array $options = []): void
+    {
+        if ($this->isPostgreSQLConnection()) {
+            $this->addPostgreSQLFullTextSearch($query, $columns, $terms, $options);
+        } elseif ($this->isSQLiteConnection()) {
+            $this->addSQLiteFullTextSearch($query, $columns, $terms, $options);
+        } else {
+            $query->orWhereFullText($columns, $terms, $options);
+        }
     }
 }
