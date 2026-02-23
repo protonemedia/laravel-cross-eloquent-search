@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class CreateTables extends Migration
 {
@@ -43,9 +44,11 @@ class CreateTables extends Migration
             $table->string('subtitle');
             $table->string('body');
 
-            $table->fullText('title');
-            $table->fullText(['title', 'subtitle']);
-            $table->fullText(['title', 'subtitle', 'body']);
+            if (config('database.default') === 'mysql') {
+                $table->fullText('title');
+                $table->fullText(['title', 'subtitle']);
+                $table->fullText(['title', 'subtitle', 'body']);
+            }
 
             $table->unsignedInteger('video_id')->nullable();
 
@@ -58,14 +61,31 @@ class CreateTables extends Migration
             $table->string('subtitle')->nullable();
             $table->string('body')->nullable();
 
-            $table->fullText('title');
-            $table->fullText(['title', 'subtitle']);
-            $table->fullText(['title', 'subtitle', 'body']);
+            if (config('database.default') === 'mysql') {
+                $table->fullText('title');
+                $table->fullText(['title', 'subtitle']);
+                $table->fullText(['title', 'subtitle', 'body']);
+            }
 
             $table->unsignedInteger('video_id')->nullable();
 
             $table->timestamps();
         });
+
+        // Create PostgreSQL extensions and indexes
+        if (config('database.default') === 'pgsql') {
+            // Enable pg_trgm extension for similarity search (SOUNDS LIKE equivalent)
+            DB::statement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
+            // Blogs table indexes
+            DB::statement('CREATE INDEX IF NOT EXISTS blogs_title_fts ON blogs USING gin (to_tsvector(\'english\', title))');
+            DB::statement('CREATE INDEX IF NOT EXISTS blogs_title_subtitle_fts ON blogs USING gin (to_tsvector(\'english\', title || \' \' || subtitle))');
+            DB::statement('CREATE INDEX IF NOT EXISTS blogs_all_fts ON blogs USING gin (to_tsvector(\'english\', title || \' \' || subtitle || \' \' || body))');
+            
+            // Pages table indexes (handling nullable fields)
+            DB::statement('CREATE INDEX IF NOT EXISTS pages_title_fts ON pages USING gin (to_tsvector(\'english\', title))');
+            DB::statement('CREATE INDEX IF NOT EXISTS pages_title_subtitle_fts ON pages USING gin (to_tsvector(\'english\', COALESCE(title, \'\') || \' \' || COALESCE(subtitle, \'\')))');
+            DB::statement('CREATE INDEX IF NOT EXISTS pages_all_fts ON pages USING gin (to_tsvector(\'english\', COALESCE(title, \'\') || \' \' || COALESCE(subtitle, \'\') || \' \' || COALESCE(body, \'\')))');
+        }
     }
     /**
      * Reverse the migrations.
