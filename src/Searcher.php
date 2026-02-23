@@ -490,12 +490,10 @@ class Searcher
 
         $this->terms->each(function ($term) use ($query, $column) {
             if ($this->soundsLike && $this->isPostgreSQLConnection()) {
-                // PostgreSQL similarity search using pg_trgm
-                $cleanTerm = str_replace('%', '', $term); // Remove wildcards
+                $cleanTerm = str_replace('%', '', $term);
                 $query->orWhereRaw("similarity({$column}, ?) > 0.3", [$cleanTerm]);
             } elseif ($this->soundsLike && $this->isSQLiteConnection()) {
-                // SQLite similarity search using basic phonetic patterns
-                $cleanTerm = str_replace('%', '', $term); // Remove wildcards
+                $cleanTerm = str_replace('%', '', $term);
                 $this->addSQLiteSoundsLikeToQuery($query, $column, $cleanTerm);
             } elseif ($this->ignoreCase) {
                 $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term]);
@@ -522,7 +520,7 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $lengthFunctionName = $this->usesSQLiteConnection() ? 'LENGTH' : 'CHAR_LENGTH';
+        $lengthFunctionName = $this->isSQLiteConnection() ? 'LENGTH' : 'CHAR_LENGTH';
 
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $lengthFunctionName) {
             $connection = $modelToSearchThrough->getModel()->getConnection();
@@ -586,16 +584,11 @@ class Searcher
                 }
             }
 
-            // PostgreSQL requires quoted identifiers for aliases starting with digits
-            $keyAlias = $modelToSearchThrough->getModelKey();
-            $orderAlias = $modelToSearchThrough->getModelKey('order');
-            $modelOrderAlias = $modelToSearchThrough->getModelKey('model_order');
+            $grammar = $modelToSearchThrough->getModel()->getConnection()->getQueryGrammar();
 
-            if ($this->isPostgreSQLConnection()) {
-                $keyAlias = '"' . $keyAlias . '"';
-                $orderAlias = '"' . $orderAlias . '"';
-                $modelOrderAlias = '"' . $modelOrderAlias . '"';
-            }
+            $keyAlias = $grammar->wrap($modelToSearchThrough->getModelKey());
+            $orderAlias = $grammar->wrap($modelToSearchThrough->getModelKey('order'));
+            $modelOrderAlias = $grammar->wrap($modelToSearchThrough->getModelKey('model_order'));
 
             return array_filter([
                 DB::raw("{$qualifiedKeyName} as {$keyAlias}"),
@@ -613,22 +606,19 @@ class Searcher
      */
     protected function makeOrderBy(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order');
+        $grammar = $this->modelsToSearchThrough->first()->getModel()->getConnection()->getQueryGrammar();
 
-        // PostgreSQL requires quoted identifiers for aliases starting with digits
-        if ($this->isPostgreSQLConnection()) {
-            $modelOrderKeys = $modelOrderKeys->map(fn ($key) => '"' . $key . '"');
-        }
-
-        $modelOrderKeysStr = $modelOrderKeys->implode(',');
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('order')
+            ->map(fn ($key) => $grammar->wrap($key))
+            ->implode(',');
 
         // SQLite and PostgreSQL have stricter column resolution in UNION queries,
         // so we use a different approach that's more compatible
         if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
-            return $this->makeCompatibleOrderBy($modelOrderKeysStr);
+            return $this->makeCompatibleOrderBy($modelOrderKeys);
         }
 
-        return "COALESCE({$modelOrderKeysStr}, NULL)";
+        return "COALESCE({$modelOrderKeys}, NULL)";
     }
 
     /**
@@ -644,16 +634,6 @@ class Searcher
     }
 
     /**
-     * Check if the current connection is SQLite.
-     *
-     * @return bool
-     */
-    protected function isSQLiteConnection(): bool
-    {
-        return $this->usesSQLiteConnection();
-    }
-
-    /**
      * Implodes the qualified orderByModel keys with a comma and
      * wraps them in a COALESCE method.
      *
@@ -661,22 +641,19 @@ class Searcher
      */
     protected function makeOrderByModel(): string
     {
-        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order');
+        $grammar = $this->modelsToSearchThrough->first()->getModel()->getConnection()->getQueryGrammar();
 
-        // PostgreSQL requires quoted identifiers for aliases starting with digits
-        if ($this->isPostgreSQLConnection()) {
-            $modelOrderKeys = $modelOrderKeys->map(fn ($key) => '"' . $key . '"');
-        }
-
-        $modelOrderKeysStr = $modelOrderKeys->implode(',');
+        $modelOrderKeys = $this->modelsToSearchThrough->map->getModelKey('model_order')
+            ->map(fn ($key) => $grammar->wrap($key))
+            ->implode(',');
 
         // SQLite and PostgreSQL have stricter column resolution in UNION queries,
         // so we use a different approach that's more compatible
         if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
-            return $this->makeCompatibleOrderBy($modelOrderKeysStr);
+            return $this->makeCompatibleOrderBy($modelOrderKeys);
         }
 
-        return "COALESCE({$modelOrderKeysStr}, NULL)";
+        return "COALESCE({$modelOrderKeys}, NULL)";
     }
 
     /**
@@ -905,7 +882,7 @@ class Searcher
      *
      * @return bool
      */
-    private function usesSQLiteConnection(): bool
+    protected function isSQLiteConnection(): bool
     {
         return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof SQLiteConnection;
     }
@@ -915,19 +892,9 @@ class Searcher
      *
      * @return bool
      */
-    private function usesPostgreSQLConnection(): bool
-    {
-        return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof PostgresConnection;
-    }
-
-    /**
-     * Check if the current connection is PostgreSQL.
-     *
-     * @return bool
-     */
     protected function isPostgreSQLConnection(): bool
     {
-        return $this->usesPostgreSQLConnection();
+        return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof PostgresConnection;
     }
 
     /**
