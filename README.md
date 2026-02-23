@@ -227,6 +227,28 @@ Search::add(Post::class, 'title')
     ->search('build');
 ```
 
+#### Query String Parameters
+
+To retain query string parameters in pagination links, use the `withQueryString` method. Without arguments, it uses the current request's query string:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->paginate(15)
+    ->withQueryString()  // Uses request()->query()
+    ->search('build');
+```
+
+Or pass a custom array of parameters:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->paginate(15)
+    ->withQueryString(['filter' => 'active', 'sort' => 'date'])
+    ->search('build');
+```
+
 ### Constraints and scoped queries
 
 Instead of the class name, you can also pass an instance of the [Eloquent query builder](https://laravel.com/docs/master/eloquent#retrieving-models) to the `add` method. This allows you to add constraints to each model.

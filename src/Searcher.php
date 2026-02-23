@@ -91,6 +91,11 @@ class Searcher
     protected string $pageName = '';
 
     /**
+     * Additional query string parameters to include in pagination links.
+     */
+    protected ?array $queryString = null;
+
+    /**
      * Parse the search term into multiple terms.
      */
     protected bool $parseTerm = true;
@@ -338,6 +343,19 @@ class Searcher
         $this->paginate($perPage, $pageName, $page);
 
         $this->simplePaginate = true;
+
+        return $this;
+    }
+
+    /**
+     * Set additional query string parameters to include in pagination links.
+     *
+     * @param  array  $query
+     * @return self
+     */
+    public function withQueryString(?array $query = null): self
+    {
+        $this->queryString = $query ?? request()->query();
 
         return $this;
     }
@@ -701,9 +719,17 @@ class Searcher
         $paginateMethod = $this->simplePaginate ? 'simplePaginate' : 'paginate';
 
         // get all results or limit the results by pagination
-        return $this->pageName
-            ? $query->{$paginateMethod}($this->perPage, ['*'], $this->pageName, $this->page)
-            : $query->get();
+        if (! $this->pageName) {
+            return $query->get();
+        }
+
+        $paginator = $query->{$paginateMethod}($this->perPage, ['*'], $this->pageName, $this->page);
+
+        if ($this->queryString !== null) {
+            $paginator->appends($this->queryString);
+        }
+
+        return $paginator;
 
         // the collection will be something like:
         //
