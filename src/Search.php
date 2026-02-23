@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher includeModelType()
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher beginWithWildcard(bool $state)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher endWithWildcard(bool $state)
+ * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher exactMatch()
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher soundsLike(bool $state)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher add($query, $columns, string $orderByColumn = null)
  * @method static \ProtoneMedia\LaravelCrossEloquentSearch\Searcher when($value, callable $callback = null, callable $default = null)

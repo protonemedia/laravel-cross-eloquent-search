@@ -44,8 +44,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_search_in_multiple_columns()
     {
-        $postA  = Post::create(['title' => 'foo']);
-        $postB  = Post::create(['title' => 'bar']);
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'bar']);
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
@@ -61,8 +61,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_count_the_results()
     {
-        $postA  = Post::create(['title' => 'foo']);
-        $postB  = Post::create(['title' => 'bar']);
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'bar']);
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
@@ -78,8 +78,8 @@ class SearchTest extends TestCase
     {
         $this->initDatabase('prefix');
 
-        $postA  = Post::create(['title' => 'foo']);
-        $postB  = Post::create(['title' => 'bar']);
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'bar']);
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar', 'subtitle' => 'foo']);
 
@@ -93,8 +93,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_search_for_a_phrase()
     {
-        $postA  = Post::create(['title' => 'foo']);
-        $postB  = Post::create(['title' => 'bar bar']);
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'bar bar']);
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar']);
 
@@ -110,8 +110,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_has_an_option_to_dont_split_the_search_term()
     {
-        $postA  = Post::create(['title' => 'foo']);
-        $postB  = Post::create(['title' => 'bar bar']);
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'bar bar']);
         $videoA = Video::create(['title' => 'foo']);
         $videoB = Video::create(['title' => 'bar']);
 
@@ -160,10 +160,10 @@ class SearchTest extends TestCase
         $array = [];
 
         Search::parseTerms('foo bar', function ($term, $key) use (&$array) {
-            $array[] = $key . $term;
+            $array[] = $key.$term;
         });
 
-        $this->assertEquals(['0foo','1bar'], $array);
+        $this->assertEquals(['0foo', '1bar'], $array);
     }
 
     /** @test */
@@ -253,8 +253,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_lets_you_specify_a_custom_order_by_column_and_direction()
     {
-        $postA  = Post::create(['title' => 'foo', 'published_at' => now()]);
-        $postB  = Post::create(['title' => 'bar']);
+        $postA = Post::create(['title' => 'foo', 'published_at' => now()]);
+        $postB = Post::create(['title' => 'bar']);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDay()]);
         $videoB = Video::create(['title' => 'bar']);
 
@@ -272,8 +272,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_accepts_a_query_builder()
     {
-        $postA  = Post::create(['title' => 'foo']);
-        $postB  = Post::create(['title' => 'foo']);
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'foo']);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDay()]);
         $videoB = Video::create(['title' => 'foo']);
 
@@ -289,8 +289,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_paginate_the_results()
     {
-        $postA  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
-        $postB  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+        $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
         $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
 
@@ -375,7 +375,7 @@ class SearchTest extends TestCase
 
         $this->assertCount(4, $results);
 
-        $results = $results->map(fn ($model) => class_basename($model) . $model->getKey());
+        $results = $results->map(fn ($model) => class_basename($model).$model->getKey());
 
         $this->assertTrue($results->contains('Video1'));    // because foo1
         $this->assertTrue($results->contains('Video2'));    // because comment4
@@ -401,9 +401,9 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_sort_by_model_order()
     {
-        $post    = Post::create(['title' => 'foo']);
+        $post = Post::create(['title' => 'foo']);
         $comment = $post->comments()->create(['body' => 'foo']);
-        $video   = Video::create(['title' => 'foo']);
+        $video = Video::create(['title' => 'foo']);
 
         $results = Search::new()
             ->add(Post::class, ['title'])
@@ -447,8 +447,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_respects_the_regular_order_when_ordering_by_model_type()
     {
-        $postA  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(4)]);
-        $postB  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+        $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(4)]);
+        $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
         $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
 
@@ -490,7 +490,7 @@ class SearchTest extends TestCase
     public function it_cant_order_by_relevance_when_searching_through_nested_relationships()
     {
         $video = Video::create(['title' => 'foo']);
-        $post  = $video->posts()->create(['title' => 'bar']);
+        $post = $video->posts()->create(['title' => 'bar']);
 
         $search = Search::new()
             ->beginWithWildcard(false)
@@ -565,8 +565,8 @@ class SearchTest extends TestCase
     /** @test */
     public function it_can_simple_paginate_the_results()
     {
-        $postA  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
-        $postB  = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+        $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
         $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
         $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
 
@@ -670,13 +670,14 @@ class SearchTest extends TestCase
                 ->addFullText(Blog::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
                 ->addFullText(Page::class, ['title', 'subtitle', 'body'], ['mode' => 'boolean'])
                 ->search('framework -css');
-            
+
             $this->assertCount(2, $fullTextResults);
-            $this->assertTrue($fullTextResults->contains($blogA));  
+            $this->assertTrue($fullTextResults->contains($blogA));
             $this->assertTrue($fullTextResults->contains($pageA));
+
             return; // Skip the mixed test for PostgreSQL
         }
-        
+
         $this->assertCount(4, $results);
 
         $this->assertTrue($results->contains($postA));
@@ -758,6 +759,16 @@ class SearchTest extends TestCase
 
         $this->assertTrue($results->first()->is($postA));
         $this->assertTrue($results->last()->is($postB));
+    }
+
+    /** @test */
+    public function it_can_perform_exact_match_search()
+    {
+        Video::create(['title' => 'foo']);
+        Video::create(['title' => 'foobar']);
+        Video::create(['title' => 'barfoo']);
+
+        $this->assertCount(1, Search::add(Video::class, 'title')->exactMatch()->search('foo'));
     }
 
     /** @test */

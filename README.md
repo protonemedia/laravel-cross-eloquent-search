@@ -127,6 +127,19 @@ Search::add(Post::class, 'title')
     ->search('os');
 ```
 
+### Exact Match
+
+If you want to perform exact matching without any wildcards, you can use the `exactMatch` method. This disables both beginning and ending wildcards and uses the exact equality operator (`=`) instead of the `LIKE` operator:
+
+```php
+Search::add(Post::class, 'title')
+    ->add(Video::class, 'title')
+    ->exactMatch()
+    ->search('Laravel');
+```
+
+In this example, only records with the exact title "Laravel" will be returned, not titles containing "Laravel" as a substring.
+
 ### Multi-word search
 
 Multi-word search is supported out of the box. Simply wrap your phrase into double-quotes.
