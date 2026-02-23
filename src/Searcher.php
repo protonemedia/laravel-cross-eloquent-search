@@ -17,6 +17,7 @@ use Illuminate\Support\Traits\Conditionable;
 class Searcher
 {
     use Conditionable;
+    use HandlesDefaultDriver;
     use HandlesSQLite;
     use HandlesPostgreSQL;
 
@@ -489,18 +490,28 @@ class Searcher
         $column = $this->ignoreCase ? $query->getConnection()->getQueryGrammar()->wrap($column) : $column;
 
         $this->terms->each(function ($term) use ($query, $column) {
-            if ($this->soundsLike && $this->isPostgreSQLConnection()) {
-                $cleanTerm = str_replace('%', '', $term);
-                $query->orWhereRaw("similarity({$column}, ?) > 0.3", [$cleanTerm]);
-            } elseif ($this->soundsLike && $this->isSQLiteConnection()) {
-                $cleanTerm = str_replace('%', '', $term);
-                $this->addSQLiteSoundsLikeToQuery($query, $column, $cleanTerm);
+            if ($this->soundsLike) {
+                $this->addSoundsLikeToQuery($query, $column, $term);
             } elseif ($this->ignoreCase) {
                 $query->orWhereRaw("LOWER({$column}) {$this->whereOperator} ?", [$term]);
             } else {
                 $query->orWhere($column, $this->whereOperator, $term);
             }
         });
+    }
+
+    /**
+     * Add SOUNDS LIKE query based on driver capabilities.
+     */
+    private function addSoundsLikeToQuery(Builder $query, string $column, string $term): void
+    {
+        $cleanTerm = str_replace('%', '', $term);
+
+        if ($this->isPostgreSQLConnection()) {
+            $query->orWhereRaw("similarity({$column}, ?) > 0.3", [$cleanTerm]);
+        } elseif ($this->isSQLiteConnection()) {
+            $this->addSQLiteSoundsLikeToQuery($query, $column, $cleanTerm);
+        }
     }
 
     /**
@@ -520,7 +531,9 @@ class Searcher
             throw OrderByRelevanceException::new();
         }
 
-        $lengthFunctionName = $this->isSQLiteConnection() ? 'LENGTH' : 'CHAR_LENGTH';
+        $lengthFunctionName = $this->isSQLiteConnection()
+            ? $this->getSQLiteStringLengthFunction()
+            : 'CHAR_LENGTH';
 
         $expressionsAndBindings = $modelToSearchThrough->getQualifiedColumns()->flatMap(function ($field) use ($modelToSearchThrough, $lengthFunctionName) {
             $connection = $modelToSearchThrough->getModel()->getConnection();
@@ -555,22 +568,24 @@ class Searcher
     protected function makeSelects(ModelToSearchThrough $currentModel): array
     {
         return $this->modelsToSearchThrough->flatMap(function (ModelToSearchThrough $modelToSearchThrough) use ($currentModel) {
-            // Use proper NULL casting for PostgreSQL
-            $nullKey = $this->isPostgreSQLConnection() ? 'NULL::bigint' : 'null';
-            $nullOrder = $this->isPostgreSQLConnection() ? 'NULL::text' : 'null';  // Use text for mixed column types
-            $nullInteger = $this->isPostgreSQLConnection() ? 'NULL::integer' : 'null';
-            
-            $qualifiedKeyName = $nullKey;
-            $qualifiedOrderByColumnName = $nullOrder;
-            $modelOrderKey = $nullInteger;
+            $qualifiedKeyName = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('key')
+                : 'null';
+            $qualifiedOrderByColumnName = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('order')
+                : 'null';
+            $modelOrderKey = $this->isPostgreSQLConnection()
+                ? $this->getPostgresNullCast('model_order')
+                : 'null';
 
             if ($modelToSearchThrough === $currentModel) {
                 $prefix = $modelToSearchThrough->getModel()->getConnection()->getTablePrefix();
 
                 $qualifiedKeyName = $prefix . $modelToSearchThrough->getQualifiedKeyName();
                 $orderColumn = $prefix . $modelToSearchThrough->getQualifiedOrderByColumnName();
-                // Cast to text for PostgreSQL to ensure consistent types across UNION
-                $qualifiedOrderByColumnName = $this->isPostgreSQLConnection() ? "({$orderColumn})::text" : $orderColumn;
+                $qualifiedOrderByColumnName = $this->isPostgreSQLConnection()
+                    ? $this->castPostgresForUnion($orderColumn)
+                    : $orderColumn;
 
                 if ($this->orderByModel) {
                     $modelOrderKey = array_search(
@@ -701,9 +716,13 @@ class Searcher
         // union the other queries together
         $queries->each(fn (Builder $query) => $firstQuery->union($query));
 
-        // For SQLite and PostgreSQL, we need to wrap the UNION query in a subquery to apply ORDER BY
-        if ($this->isSQLiteConnection() || $this->isPostgreSQLConnection()) {
-            return $this->applyCompatibleOrdering($firstQuery);
+        // SQLite and PostgreSQL require subquery wrapping for UNION ORDER BY
+        if ($this->isSQLiteConnection()) {
+            return $this->applySQLiteOrdering($firstQuery);
+        }
+
+        if ($this->isPostgreSQLConnection()) {
+            return $this->applyPostgresOrdering($firstQuery);
         }
 
         if ($this->orderByModel) {
@@ -719,35 +738,6 @@ class Searcher
 
         // sort by the given columns and direction
         return $firstQuery->orderBy(
-            DB::raw($this->makeOrderBy()),
-            $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
-        );
-    }
-
-    /**
-     * Apply SQLite-specific ordering by wrapping the query in a subquery.
-     *
-     * @param QueryBuilder $unionQuery
-     * @return QueryBuilder
-     */
-    protected function applyCompatibleOrdering(QueryBuilder $unionQuery): QueryBuilder
-    {
-        // Create a new query that selects from the UNION as a subquery
-        $subQuery = DB::query()->fromSub($unionQuery, 'union_results');
-
-        if ($this->orderByModel) {
-            $subQuery->orderBy(
-                DB::raw($this->makeOrderByModel()),
-                $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
-            );
-        }
-
-        if ($this->isOrderingByRelevance() && $this->termsWithoutWildcards->isNotEmpty()) {
-            return $subQuery->orderBy('terms_count', 'desc');
-        }
-
-        // sort by the given columns and direction
-        return $subQuery->orderBy(
             DB::raw($this->makeOrderBy()),
             $this->isOrderingByRelevance() ? 'asc' : $this->orderByDirection
         );

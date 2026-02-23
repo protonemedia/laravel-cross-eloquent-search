@@ -2,6 +2,7 @@
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\PostgresConnection;
 
 trait HandlesPostgreSQL
@@ -12,6 +13,43 @@ trait HandlesPostgreSQL
     protected function isPostgreSQLConnection(): bool
     {
         return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof PostgresConnection;
+    }
+
+    /**
+     * Get NULL casting for PostgreSQL types.
+     */
+    protected function getPostgresNullCast(string $type): string
+    {
+        return match ($type) {
+            'key' => 'NULL::bigint',
+            'order' => 'NULL::text',
+            'model_order' => 'NULL::integer',
+            default => 'null',
+        };
+    }
+
+    /**
+     * Cast column to text for PostgreSQL UNION compatibility.
+     */
+    protected function castPostgresForUnion(string $column): string
+    {
+        return "({$column})::text";
+    }
+
+    /**
+     * PostgreSQL requires subquery wrapping for UNION ORDER BY.
+     */
+    protected function postgresRequiresSubquery(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Apply PostgreSQL-specific ordering by wrapping in subquery.
+     */
+    protected function applyPostgresOrdering(QueryBuilder $unionQuery): QueryBuilder
+    {
+        return $this->applySubqueryOrdering($unionQuery);
     }
 
     /**

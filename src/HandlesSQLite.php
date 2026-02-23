@@ -2,6 +2,7 @@
 
 namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\SQLiteConnection;
 
 trait HandlesSQLite
@@ -12,6 +13,30 @@ trait HandlesSQLite
     protected function isSQLiteConnection(): bool
     {
         return $this->modelsToSearchThrough->first()->getModel()->getConnection() instanceof SQLiteConnection;
+    }
+
+    /**
+     * Get the string length function name for SQLite.
+     */
+    protected function getSQLiteStringLengthFunction(): string
+    {
+        return 'LENGTH';
+    }
+
+    /**
+     * SQLite requires subquery wrapping for UNION ORDER BY.
+     */
+    protected function sqliteRequiresSubquery(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Apply SQLite-specific ordering by wrapping in subquery.
+     */
+    protected function applySQLiteOrdering(QueryBuilder $unionQuery): QueryBuilder
+    {
+        return $this->applySubqueryOrdering($unionQuery);
     }
 
     /**
