@@ -645,6 +645,71 @@ class SearchTest extends TestCase
 
     #[Test]
     /** @test */
+    public function it_uses_request_query_string_when_withQueryString_has_no_arguments()
+    {
+        request()->merge(['search' => 'laravel', 'category' => 'php']);
+
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'foo']);
+        $postC = Post::create(['title' => 'foo']);
+
+        $results = Search::add(Post::class, 'title')
+            ->paginate(2, 'page', 1)
+            ->withQueryString()  // no arguments, uses request()->query()
+            ->search('foo');
+
+        $this->assertInstanceOf(LengthAwarePaginator::class, $results);
+
+        // Check that request query params are in the pagination URLs
+        $nextPageUrl = $results->nextPageUrl();
+        $this->assertStringContainsString('search=laravel', $nextPageUrl);
+        $this->assertStringContainsString('category=php', $nextPageUrl);
+        $this->assertStringContainsString('page=2', $nextPageUrl);
+    }
+
+    #[Test]
+    /** @test */
+    public function it_can_use_withQueryString_with_empty_array_to_add_no_params()
+    {
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'foo']);
+
+        $results = Search::add(Post::class, 'title')
+            ->paginate(1, 'page', 1)
+            ->withQueryString([])
+            ->search('foo');
+
+        $this->assertInstanceOf(LengthAwarePaginator::class, $results);
+
+        // Only page param should be present, no extra query string
+        $nextPageUrl = $results->nextPageUrl();
+        $this->assertStringContainsString('page=2', $nextPageUrl);
+        $this->assertStringNotContainsString('search=', $nextPageUrl);
+    }
+
+    #[Test]
+    /** @test */
+    public function it_can_use_withQueryString_with_null_to_use_request_query()
+    {
+        request()->merge(['filter' => 'published']);
+
+        $postA = Post::create(['title' => 'foo']);
+        $postB = Post::create(['title' => 'foo']);
+
+        $results = Search::add(Post::class, 'title')
+            ->paginate(1, 'page', 1)
+            ->withQueryString(null)  // explicit null, should use request query
+            ->search('foo');
+
+        $this->assertInstanceOf(LengthAwarePaginator::class, $results);
+
+        $nextPageUrl = $results->nextPageUrl();
+        $this->assertStringContainsString('filter=published', $nextPageUrl);
+        $this->assertStringContainsString('page=2', $nextPageUrl);
+    }
+
+    #[Test]
+    /** @test */
     public function it_includes_a_model_identifier_to_search_results()
     {
         Post::create(['title' => 'bar']);
