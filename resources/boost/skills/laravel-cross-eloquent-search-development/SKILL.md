@@ -1,24 +1,26 @@
-# laravel-cross-eloquent-search-development
+---
+name: laravel-cross-eloquent-search-development
+description: Development guidance for `protonemedia/laravel-cross-eloquent-search` (Performs a single search across multiple Eloquent models.).
+license: MIT
+metadata:
+  author: ProtoneMedia
+  source: https://github.com/protonemedia/laravel-cross-eloquent-search
+---
 
-## When to activate
-- You are modifying code in **laravel-cross-eloquent-search**.
-- You are reviewing/triaging issues or PRs for **laravel-cross-eloquent-search**.
+# Laravel Cross Eloquent Search Development
+
+## Overview
+Use this skill when changing package code, docs, tests, or release tooling for `protonemedia/laravel-cross-eloquent-search`.
+
+## When to Activate
+- You are modifying code in this repository.
+- You are reviewing/triaging issues or PRs for this package.
 - You are preparing a release (version bump, tag, changelog).
 
-## Aim
-Ship safe improvements while preserving the documented public API and keeping the test suite green.
+## Workflow
+1. Skim the README / docs to confirm the public contract.
+2. Read  for common patterns and pitfalls.
+3. Keep changes small, add/update tests when behavior changes, and avoid breaking API changes.
 
-## Do
-- Keep PRs small and focused.
-- Treat documented behavior (README) as the supported contract.
-- Add or update tests when behavior changes.
-- Prefer Laravel conventions (container bindings, facades, config publishing, events).
-
-## Don’t
-- Introduce breaking changes without clearly documenting them.
-- Add new runtime dependencies without strong justification.
-- Bake in app-specific assumptions; keep the package reusable.
-
-## Quick workflow
-- Install dependencies: `composer install`
-- Run tests: `composer test` (or the repository’s configured test command)
+## References
+- 

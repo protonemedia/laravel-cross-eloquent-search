@@ -1,19 +1,15 @@
-# laravel-cross-eloquent-search development guide
+# Laravel Cross Eloquent Search Reference
 
-For full documentation, see the README: https://github.com/protonemedia/laravel-cross-eloquent-search#readme
+Complete reference for `protonemedia/laravel-cross-eloquent-search`. Full documentation: https://github.com/protonemedia/laravel-cross-eloquent-search#readme
 
-## At a glance
-Searches across multiple **Eloquent models**, with support for sorting, pagination, scopes, and eager-loading.
+## Start Here
+- README / docs: https://github.com/protonemedia/laravel-cross-eloquent-search#readme
 
-## Local setup
-- Install dependencies: `composer install`
-- Keep the dev loop package-focused (avoid adding app-only scaffolding).
+## Notes for AI Assistants
+- Treat the README as the source of truth for the supported public API.
+- Keep changes backward-compatible unless the change is explicitly a breaking change.
 
 ## Testing
-- Run: `composer test` (preferred) or the repository’s configured test runner.
-- Add regression tests for bug fixes.
+- Run the repository test command (see README / composer scripts).
 
-## Notes & conventions
-- Query performance matters: avoid N+1 and unnecessary joins/subqueries.
-- Keep the API for defining searchable models/columns stable.
-- Add tests for ordering/pagination consistency across models.
+For detailed usage examples and the full API surface, refer to the README.

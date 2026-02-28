@@ -1,14 +1,8 @@
-{{--
-  Laravel Boost guidelines (repository core)
+{{-- Laravel Cross Eloquent Search Guidelines for AI Code Assistants --}}
+{{-- Source: https://github.com/protonemedia/laravel-cross-eloquent-search --}}
+{{-- License: MIT | (c) ProtoneMedia --}}
 
-  This file intentionally stays small: it links this repository to its package-specific Boost skill.
---}}
+## Laravel Cross Eloquent Search
 
-<section>
-    <h2>Repository development skill</h2>
-
-    <p>
-        When working on this repository, activate the <code>laravel-cross-eloquent-search-development</code> skill.
-        It contains package-specific conventions, testing notes, and common pitfalls.
-    </p>
-</section>
+- Performs a single search across multiple Eloquent models.
+- Always activate the `laravel-cross-eloquent-search-development` skill when making package-specific changes.
