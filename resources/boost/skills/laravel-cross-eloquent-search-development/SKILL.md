@@ -1,6 +1,6 @@
 ---
 name: laravel-cross-eloquent-search-development
-description: Application integration guidance for protonemedia/laravel-cross-eloquent-search.
+description: Build and work with protonemedia/laravel-cross-eloquent-search features including searching across multiple Eloquent models, full-text search, pagination, and relevance ordering.
 license: MIT
 metadata:
   author: ProtoneMedia
@@ -9,11 +9,12 @@ metadata:
 # Laravel Cross Eloquent Search Development
 
 ## Overview
-Use `protonemedia/laravel-cross-eloquent-search.` in a Laravel application.
+Use protonemedia/laravel-cross-eloquent-search to search across multiple Eloquent models in a single query. Supports full-text search, pagination, relevance ordering, and relationship fields.
 
 ## When to Activate
-- Activate when adding, configuring, or using this package in application code (controllers, jobs, commands, tests, config, routes, Blade, etc.).
-- Activate when code references `protonemedia/laravel-cross-eloquent-search.` classes, facades, config, or documented features.
+- Activate when building search features that span multiple Eloquent models.
+- Activate when code references `Search::new()`, `addFullText()`, or classes in the `ProtoneMedia\LaravelCrossEloquentSearch` namespace.
+- Activate when the user wants to add, configure, or debug cross-model search functionality.
 
 ## Scope
 - In scope: documented public API usage, configuration, testing patterns, and common integration recipes.
@@ -22,22 +23,57 @@ Use `protonemedia/laravel-cross-eloquent-search.` in a Laravel application.
 ## Workflow
 1. Identify the task (install/setup, configuration, feature usage, debugging, tests, etc.).
 2. Read `references/laravel-cross-eloquent-search-guide.md` and focus on the relevant section.
-3. Apply the documented patterns and keep examples minimal and Laravel-native.
+3. Apply the patterns from the reference, keeping code minimal and Laravel-native.
 
 ## Core Concepts
-- Prefer the patterns shown in the full documentation and reference.
-- Keep examples copy-pastable and aligned with typical Laravel conventions.
 
-## Do and Don't
+### Basic Search
+```php
+use ProtoneMedia\LaravelCrossEloquentSearch\Search;
+
+$results = Search::new()
+    ->add(Post::class, [‘title’, ‘body’])
+    ->add(Video::class, [‘title’, ‘description’])
+    ->search($term);
+```
+
+### Constrained Builders
+```php
+$results = Search::new()
+    ->add(Post::query()->where(‘status’, ‘published’), [‘title’, ‘body’])
+    ->add(Video::query()->where(‘is_public’, true), [‘title’])
+    ->search($term);
+```
+
+### Pagination
+```php
+$paginator = Search::new()
+    ->add(Post::class, [‘title’, ‘body’])
+    ->add(Video::class, [‘title’])
+    ->paginate(15)
+    ->withQueryString()
+    ->search($term);
+```
+
+### Full-Text Search
+```php
+$results = Search::new()
+    ->addFullText(Post::class, [‘title’, ‘body’], [‘mode’ => ‘boolean’])
+    ->search(‘framework -css’);
+```
+
+## Do and Don’t
 
 Do:
-- Follow the package’s documented installation and configuration steps.
-- Provide examples that compile in a typical Laravel project.
-- Call out relevant pitfalls (configuration, queues, filesystem, permissions, testing) when applicable.
+- Always call `paginate()` or `simplePaginate()` **before** `search()`.
+- Use `includeModelType()` when rendering mixed-model results in UI or API responses.
+- Pass Eloquent builders (not class names) when you need scoping, authorization, or eager loading.
+- Use `orderByModel()` or `orderByRelevance()` for deterministic result ordering.
 
-Don't:
-- Don't invent undocumented methods/options; stick to the docs and reference.
-- Don't suggest changing package internals unless the user explicitly wants to contribute upstream.
+Don’t:
+- Don’t use `orderByRelevance()` when searching through relationships — it is not supported.
+- Don’t invent undocumented methods/options; stick to the docs and reference.
+- Don’t suggest changing package internals unless the user explicitly wants to contribute upstream.
 
 ## References
 - `references/laravel-cross-eloquent-search-guide.md`
