@@ -1,4 +1,6 @@
-# Laravel Cross Eloquent Search Reference (App Usage)
+# Laravel Cross Eloquent Search Reference
+
+Complete reference for `protonemedia/laravel-cross-eloquent-search.`. Full documentation: https://github.com/protonemedia/laravel-cross-eloquent-search#readme
 
 Reference for **using** `protonemedia/laravel-cross-eloquent-search` inside Laravel applications.
 
