@@ -1,59 +1,36 @@
 ---
 name: laravel-cross-eloquent-search-development
-description: Guidance for using protonemedia/laravel-cross-eloquent-search in Laravel applications (cross-model Eloquent search).
+description: Application integration guidance for protonemedia/laravel-cross-eloquent-search.
 license: MIT
 metadata:
   author: ProtoneMedia
   source: https://github.com/protonemedia/laravel-cross-eloquent-search
 ---
 
-# Laravel Cross Eloquent Search (App Usage)
+# Laravel Cross Eloquent Search
 
-## Overview
-
-Use this skill to help **implement and troubleshoot cross-model search in a Laravel application** using `protonemedia/laravel-cross-eloquent-search`.
-
-It covers how to:
-- Add multiple models (or constrained builders) to a search.
-- Choose searchable columns and relationship paths.
-- Apply pagination/sorting/relevance/full-text options.
-- Debug unexpected result ordering or missing matches.
-- Write application tests around search behavior.
+Guidance for **application developers** using `protonemedia/laravel-cross-eloquent-search` in a Laravel app.
 
 ## When to Activate
 
-Activate when you are:
-- Building a **global search** endpoint/UI that searches across several models.
-- Configuring **searchable columns** (arrays, relationship dot-notation) per model.
-- Using package features like `paginate()`, `withQueryString()`, `orderByModel()`, `orderByRelevance()`, `includeModelType()`, `exactMatch()`, or wildcard controls.
-- Adding **full-text** search via `addFullText()` or similarity search via `soundsLike()`.
-- Debugging search results in app code (missing hits, ordering, relationship searches, database-driver differences).
-- Writing/adjusting **app tests** that assert cross-model search results.
+- You’re adding this package to an app, wiring it into routes/controllers/jobs/commands, or writing tests that use it.
+- You’re debugging runtime behaviour coming from this package (configuration, environment requirements, expected outputs).
 
 ## Scope
 
-This skill focuses on **application-level usage**:
-- Controller/service-layer integration, query parameter handling, pagination.
-- Model/builder setup (scopes/constraints, eager loading, relationship search paths).
-- Database concerns that affect search quality (indexes, driver capabilities).
-- Testing strategies for deterministic assertions.
+- Focus on **how to use the package’s public API** from a Laravel application.
+- Prefer patterns shown in the README and reference doc.
 
-Out of scope:
-- Changing or refactoring the package’s internal implementation.
+## Do
 
-## Do & Don’t
+- Follow the package’s documented configuration steps (publishing config, env vars, middleware, etc.).
+- Provide copy-pastable examples that compile in a typical Laravel project.
+- Call out common pitfalls (permissions, queueing, test fakes, disk configuration) when relevant.
 
-**Do:**
-- Mirror the README-supported API and call order (e.g., `paginate()` before `search()`).
-- Distinguish models in aggregated results with `includeModelType()` when your UI/API needs it.
-- Use constrained builders (`Post::published()`, `Video::where(...)`) to keep app rules close to the search definition.
-- Prefer relationship dot-notation for related fields (e.g., `comments.body`, `posts.user.name`).
-- Add driver-appropriate full-text indexes/extensions when enabling full-text/similarity features.
+## Don’t
 
-**Don’t:**
-- Assume relevance ordering works with relationship searching (it doesn’t, per README).
-- Expect full-text/similarity features to behave identically across MySQL/Postgres/SQLite.
-- Assert on unstable ordering in tests without explicitly setting ordering (`orderBy...`, `orderByModel`, etc.).
+- Don’t suggest changing this package’s internal source code unless the user explicitly says they are contributing to the package.
+- Don’t invent undocumented methods/options; stick to the README/reference.
 
 ## Reference
 

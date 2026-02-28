@@ -1,11 +1,10 @@
-{{-- Laravel Cross Eloquent Search Guidelines for AI Code Assistants --}}
-{{-- Source: https://github.com/protonemedia/laravel-cross-eloquent-search --}}
-{{-- License: MIT | (c) ProtoneMedia --}}
+{-- Laravel Cross Eloquent Search Guidelines for AI Code Assistants --}
+{-- Source: https://github.com/protonemedia/laravel-cross-eloquent-search --}
+{-- License: MIT | (c) ProtoneMedia --}
 
 ## Laravel Cross Eloquent Search
 
-- This package helps Laravel **application developers** search across **multiple Eloquent models** through a single, fluent API.
-- Typical app use cases: global search (e.g., Posts + Videos + Comments), relationship search (`comments.body`), per-model constraints, sorting, and pagination.
-- Activate the `laravel-cross-eloquent-search-development` skill whenever you’re implementing, configuring, or debugging **cross-model search usage in a Laravel app** (not when working on the package internals).
-- For supported patterns, examples, common pitfalls, and testing tips, consult:
+- This project uses **Laravel Cross Eloquent Search** (ProtoneMedia) in a Laravel application.
+- Activate the **`laravel-cross-eloquent-search-development`** skill when you are **integrating, configuring, or using** this package in app code (controllers, jobs, tests, config, routes, Blade, etc.).
+- Use the reference doc for the package’s public API and common recipes:
   - `resources/boost/skills/laravel-cross-eloquent-search-development/references/laravel-cross-eloquent-search-guide.md`
