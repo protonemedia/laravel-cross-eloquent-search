@@ -1,6 +1,6 @@
 ---
 name: laravel-cross-eloquent-search-development
-description: Development guidance for protonemedia/laravel-cross-eloquent-search. Performs a single search across multiple Eloquent models.
+description: Development guidance for protonemedia/laravel-cross-eloquent-search (cross-model Eloquent search).
 license: MIT
 metadata:
   author: ProtoneMedia
@@ -9,18 +9,12 @@ metadata:
 
 # Laravel Cross Eloquent Search Development
 
-## Overview
-Use this skill when changing package code, docs, tests, or release tooling for protonemedia/laravel-cross-eloquent-search.
-
-## When to Activate
-- You are modifying code in this repository.
-- You are reviewing/triaging issues or PRs for this package.
-- You are preparing a release (version bump, tag, changelog).
+Use this skill when changing code, docs, or tests in `protonemedia/laravel-cross-eloquent-search`.
 
 ## Workflow
-1. Skim the README / docs to confirm the public contract.
-2. Read references/laravel-cross-eloquent-search-guide.md for common patterns and pitfalls.
-3. Keep changes small, add/update tests when behavior changes, and avoid breaking API changes.
+1. Treat the README as the public contract.
+2. Use `references/laravel-cross-eloquent-search-guide.md` for supported patterns (relationships, pagination, relevance, full-text).
+3. Avoid breaking changes to query semantics and result ordering defaults.
 
-## References
+## Reference
 - references/laravel-cross-eloquent-search-guide.md

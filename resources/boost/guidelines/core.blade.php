@@ -4,5 +4,7 @@
 
 ## Laravel Cross Eloquent Search
 
-- Performs a single search across multiple Eloquent models.
+- Provides cross-model searching for Eloquent models with sorting, pagination, relationship search, and optional full-text strategies.
 - Always activate the `laravel-cross-eloquent-search-development` skill when making package-specific changes.
+- For public API, examples, and pitfalls, consult:
+  - `resources/boost/skills/laravel-cross-eloquent-search-development/references/laravel-cross-eloquent-search-guide.md`
