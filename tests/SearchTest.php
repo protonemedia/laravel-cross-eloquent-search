@@ -354,6 +354,34 @@ class SearchTest extends TestCase
 
     #[Test]
     /** @test */
+    public function it_can_order_by_selected_alias_columns_like_with_count()
+    {
+        $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDay()]);
+        $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+
+        $postA->comments()->create(['body' => 'first']);
+        $postA->comments()->create(['body' => 'second']);
+        $postB->comments()->create(['body' => 'third']);
+
+        $video = Video::create(['title' => 'foo', 'published_at' => now()]);
+
+        $results = Search::add(Post::select('id', 'title')->withCount('comments'), 'title', 'comments_count')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc()
+            ->search('foo');
+
+        $this->assertCount(3, $results);
+
+        $postResults = $results->filter(fn ($model) => $model instanceof Post)->values();
+
+        $this->assertCount(2, $postResults);
+        $this->assertEquals(2, $postResults->first()->comments_count);
+        $this->assertEquals(1, $postResults->last()->comments_count);
+        $this->assertTrue($results->contains($video));
+    }
+
+    #[Test]
+    /** @test */
     public function it_can_search_through_relations()
     {
         $videoA = Video::create(['title' => 'foo1']);
