@@ -334,6 +334,57 @@ class SearchTest extends TestCase
 
     #[Test]
     /** @test */
+    public function it_can_limit_and_offset_results_without_pagination()
+    {
+        $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+        $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
+        $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $results = Search::add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc()
+            ->offset(1)
+            ->limit(2)
+            ->search('foo');
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results->first()->is($postB));
+        $this->assertTrue($results->last()->is($postA));
+    }
+
+    #[Test]
+    /** @test */
+    public function it_can_limit_and_offset_results_with_for_page()
+    {
+        $postA = Post::create(['title' => 'foo', 'published_at' => now()->addDays(1)]);
+        $postB = Post::create(['title' => 'foo', 'published_at' => now()->addDays(2)]);
+        $videoA = Video::create(['title' => 'foo', 'published_at' => now()]);
+        $videoB = Video::create(['title' => 'foo', 'published_at' => now()->addDays(3)]);
+
+        $results = Search::add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc()
+            ->forPage(1, 2)
+            ->search('foo');
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results->first()->is($videoB));
+        $this->assertTrue($results->last()->is($postB));
+
+        $results = Search::add(Post::class, 'title', 'published_at')
+            ->add(Video::class, 'title', 'published_at')
+            ->orderByDesc()
+            ->forPage(2, 2)
+            ->search('foo');
+
+        $this->assertCount(2, $results);
+        $this->assertTrue($results->first()->is($postA));
+        $this->assertTrue($results->last()->is($videoA));
+    }
+
+    #[Test]
+    /** @test */
     public function it_can_eager_load_relations()
     {
         $postA = Post::create(['title' => 'foo']);
