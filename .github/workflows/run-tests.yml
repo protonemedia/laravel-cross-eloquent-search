@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.6, 8.5, 8.4, 8.3, 8.2]
+        php: [8.6, 8.5, 8.4, 8.3]
         laravel: ['12.*', '13.*']
         dependency-version: [prefer-lowest, prefer-stable]
         include:
@@ -19,9 +19,6 @@ jobs:
             testbench: ^10.0
           - laravel: 13.*
             testbench: ^11.0
-        exclude:
-          - laravel: 13.*
-            php: 8.2
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - DB mysql - ${{ matrix.dependency-version }}
 
@@ -74,7 +71,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.6, 8.5, 8.4, 8.3, 8.2]
+        php: [8.6, 8.5, 8.4, 8.3]
         laravel: ["12.*", "13.*"]
         dependency-version: [prefer-lowest, prefer-stable]
         include:
@@ -82,9 +79,6 @@ jobs:
             testbench: ^10.0
           - laravel: 13.*
             testbench: ^11.0
-        exclude:
-          - laravel: 13.*
-            php: 8.2
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - DB sqlite - ${{ matrix.dependency-version }}
 
@@ -122,7 +116,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.6, 8.5, 8.4, 8.3, 8.2]
+        php: [8.6, 8.5, 8.4, 8.3]
         laravel: ["12.*", "13.*"]
         dependency-version: [prefer-lowest, prefer-stable]
         include:
@@ -130,9 +124,6 @@ jobs:
             testbench: ^10.0
           - laravel: 13.*
             testbench: ^11.0
-        exclude:
-          - laravel: 13.*
-            php: 8.2
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - DB pgsql - ${{ matrix.dependency-version }}
 
