@@ -4,6 +4,7 @@ namespace ProtoneMedia\LaravelCrossEloquentSearch;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -185,7 +186,49 @@ class ModelToSearchThrough
      */
     public function getQualifiedOrderByColumnName(): string
     {
+        if (str_contains($this->orderByColumn, '.')) {
+            return $this->orderByColumn;
+        }
+
+        if ($expression = $this->getSelectedAliasExpression($this->orderByColumn)) {
+            return $expression;
+        }
+
         return $this->qualifyColumn($this->orderByColumn);
+    }
+
+    /**
+     * Return the SQL expression for a selected alias, without the "AS alias" part.
+     */
+    private function getSelectedAliasExpression(string $alias): ?string
+    {
+        $columns = $this->builder->getQuery()->columns;
+
+        if (! is_array($columns)) {
+            return null;
+        }
+
+        $grammar = $this->builder->getQuery()->grammar;
+
+        foreach ($columns as $column) {
+            if ($column instanceof Expression) {
+                $column = method_exists($column, 'getValue')
+                    ? $column->getValue($grammar)
+                    : (string) $column;
+            }
+
+            if (! is_string($column)) {
+                continue;
+            }
+
+            $column = trim($column);
+
+            if (preg_match('/^(.*)\bas\s+[`"\[]?'.preg_quote($alias, '/').'[`"\]]?\s*$/i', $column, $matches)) {
+                return trim($matches[1]);
+            }
+        }
+
+        return null;
     }
 
     /**
